@@ -1,0 +1,5 @@
+# ignored filetypes and folders
+*.csv
+*.xlsx
+
+app/__pycache__/
