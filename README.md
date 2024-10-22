@@ -10,3 +10,14 @@ The two main strategies employed to tackle this problem is increasing the number
 * What is the optimum number of people to stream from ED to SDEC to minimise ED waits? (Evidence for a particular management strategy)
 ### Outputs:
 I plan to create DES model(s), using the methods taught on the HSMA, that are able to provide evidence for the questions above. I would  also hope to create a friendly user interface that my stakeholders could use to try out scenarios and help understand how the model works.
+
+# Structure of the repo
+
+### model_script
+Contains both the model and code in one script to generate the outputs to make it easy to test the impact of changes and play around with outputs.
+
+## app
+This folder contains the code required to run the model as an app (with model classes and outputs separated into separate scripts), run app.py to run the app. On main branch the model code for the app and in model_script should always be the same.
+
+## environment
+The environment required to run the model / app.
