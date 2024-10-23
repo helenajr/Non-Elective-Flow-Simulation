@@ -73,6 +73,9 @@ class Model:
 
         # Create an attribute to store the mean queuing times
         self.mean_q_time_bed = 0
+        self.ed_admissions = 0
+        self.sdec_admissions = 0
+        self.other_admissions = 0
     
     # A generator function for ed patient arrivals
     def generator_patient_arrivals(self): # ED generator
@@ -289,7 +292,10 @@ class Model:
         self.results_df.drop([1], inplace=True)
         # Take the mean of the queuing times across patients in this run of the 
         # model.
-        self.mean_q_time_bed = self.results_df["Q Time Bed"].mean()
+        self.ed_admissions = (self.results_df["Department"] == "ED").sum()
+        self.mean_q_time_bed = (self.results_df["Q Time Bed"].mean()) / 60.0
+        self.sdec_admissions = (self.results_df["Department"] == "SDEC").sum()
+        self.other_admissions = (self.results_df["Department"] == "Other").sum()
 
     # The run method starts up the DES entity generators, runs the simulation,
     # and in turns calls anything we need to generate results for the run
@@ -316,7 +322,10 @@ class Trial:
     def  __init__(self):
         self.df_trial_results = pd.DataFrame()
         self.df_trial_results["Run Number"] = [0]
+        self.df_trial_results["ED Admissions"] = [0]
         self.df_trial_results["Mean Q Time Bed"] = [0.0]
+        self.df_trial_results["SDEC Admissions"] = [0]
+        self.df_trial_results["Other Admissions"] = [0]
         self.df_trial_results.set_index("Run Number", inplace=True)
 
     # Method to calculate and store overall means.
@@ -345,7 +354,11 @@ class Trial:
             my_model = Model(run)
             patient_level_results = my_model.run()
             
-            self.df_trial_results.loc[run] = [my_model.mean_q_time_bed]
+            self.df_trial_results.loc[run] = [my_model.ed_admissions, 
+                                              my_model.mean_q_time_bed,
+                                              my_model.sdec_admissions,
+                                              my_model.other_admissions]
+            self.df_trial_results = self.df_trial_results.round(2)
 
             patient_level_results = patient_level_results.round(2)
             patient_level_results['run'] = run
