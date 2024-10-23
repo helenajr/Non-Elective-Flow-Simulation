@@ -25,6 +25,7 @@ class g:
 class Patient:
     def __init__(self, p_id):
         self.id = p_id
+        self.department = ""
         self.q_time_bed = 0
         self.start_q_bed = 0
         self.end_q_bed = 0
@@ -54,6 +55,7 @@ class Model:
         # Create a new DataFrame that will store results against patientID
         self.results_df = pd.DataFrame()
         self.results_df["Patient ID"] = [1]
+        self.results_df["Department"] = [""]
         self.results_df["InitialPriority"] = [0.0]
         self.results_df["UpdatedPriority"] = [0.0]
         self.results_df["Q Time Bed"] = [0.0]
@@ -73,16 +75,18 @@ class Model:
         self.mean_q_time_bed = 0
     
     # A generator function for ed patient arrivals
-    def generator_patient_arrivals(self):
+    def generator_patient_arrivals(self): # ED generator
         # We use an infinite loop here to keep doing this indefinitely
         while True:
             # Increment the patient counter by 1 (this means our first patient
             # will have an ID of 1)
             self.patient_counter += 1
             
+            
             # Create a new patient - an instance of the Patient Class we
             # defined above. We pass the patient counter to use as the ID.
             p = Patient(self.patient_counter)
+            p.department = "ED"
 
             # Tell SimPy to start up the attend_hospital function with
             # this patient
@@ -99,6 +103,7 @@ class Model:
             self.patient_counter += 1
             
             p = Patient(self.patient_counter)
+            p.department = "SDEC"
 
             self.env.process(self.attend_sdec(p))
 
@@ -111,6 +116,7 @@ class Model:
             self.patient_counter += 1
             
             p = Patient(self.patient_counter)
+            p.department = "Other"
 
             self.env.process(self.attend_other(p))
 
@@ -118,7 +124,7 @@ class Model:
 
             yield self.env.timeout(sampled_inter)
 
-    def attend_hospital(self, patient):
+    def attend_hospital(self, patient): # attending ED
 
         # Record the time the patient started queuing for a bed and their initial priority
         # If we are through the warm up period
@@ -131,6 +137,9 @@ class Model:
                         )
             self.results_df.at[patient.id, "InitialPriority"] = (
                             patient.priority
+                        )
+            self.results_df.at[patient.id, "Department"] = (
+                            patient.department
                         )
         
         # Request a bed
@@ -233,6 +242,9 @@ class Model:
                 self.results_df.at[patient.id, "sdec_checkout"] = (
                     patient.end_q_bed
                 )
+                self.results_df.at[patient.id, "Department"] = (
+                            patient.department
+                        )
             
             sampled_bed_time = random.expovariate(1.0 / 
                                                         g.mean_time_in_bed)
@@ -262,6 +274,9 @@ class Model:
                 self.results_df.at[patient.id, "other_checkout"] = (
                     patient.end_q_bed
                 )
+                self.results_df.at[patient.id, "Department"] = (
+                            patient.department
+                        )
             
             sampled_bed_time = random.expovariate(1.0 / 
                                                         g.mean_time_in_bed)
@@ -311,13 +326,13 @@ class Trial:
         )
 
     # Method to print out the results from the trial.
-    # def print_trial_results(self):
-    #     print ("Trial Results")
-    #     print (self.df_trial_results)
+    def print_trial_results(self):
+         print ("Trial Results")
+         print (self.df_trial_results)
 
-    # def print_alltrial_summary(self):
-    #     print("Mean Q Time Bed")
-    #     print(self.df_trial_results["Mean Q Time Bed"].mean())
+    def print_alltrial_summary(self):
+         print("Mean Q Time Bed")
+         print(self.df_trial_results["Mean Q Time Bed"].mean())
 
     # Method to run a trial
     def run_trial(self):
@@ -341,7 +356,7 @@ class Trial:
         all_results_patient_level = pd.concat(results_dfs)
                                               
         # Once the trial (ie all runs) has completed, print the final results
-        #self.print_trial_results()
+        self.print_trial_results()
         #self.print_alltrial_summary()
 
         self.calculate_means_over_trial()
@@ -406,6 +421,8 @@ data = {
 df = pd.DataFrame(data)
 
 display(df)
+
+
 
 #####################
 #plotting and showing a single figure
