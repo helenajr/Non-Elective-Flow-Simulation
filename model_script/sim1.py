@@ -9,8 +9,7 @@ import seaborn as sns
 import time
 import Lognormal # (from a .py file, written by Tom Monks)
 
-# Class to store global parameter values.
-class g:
+class g: # global
     ed_inter_visit = 37.7 # see observed_edintervist notebook
     sdec_inter_visit = 128.8 # see sdec intervisit notebook
     other_inter_visit = 375.7 # see other intervisit notebook.
@@ -21,7 +20,6 @@ class g:
     warm_up_period = 86400 # warm up for 60 days - need to test if  this is long enough
     number_of_runs = 10
 
-# Class representing patients needing admission.
 class Patient:
     def __init__(self, p_id):
         self.id = p_id
@@ -34,7 +32,6 @@ class Patient:
         self.priority_update = random.randint(0, 9000)
         self.sdec_other_priority = 0.8
 
-# Class representing our model of the hospital.
 class Model:
     # Constructor to set up the model for a run.  We pass in a run number when
     # we create a new model.
@@ -80,10 +77,8 @@ class Model:
         self.mean_q_time_other = 0
         self.reneged = 0
     
-    # A generator function for ed patient arrivals
     def generator_patient_arrivals(self): # ED generator
-        # We use an infinite loop here to keep doing this indefinitely
-        while True:
+        while True: # infinite loop
             # Increment the patient counter by 1 (this means our first patient
             # will have an ID of 1)
             self.patient_counter += 1
@@ -252,8 +247,8 @@ class Model:
                             patient.department
                         )
             
-            sampled_bed_time = random.expovariate(1.0 / 
-                                                        g.mean_time_in_bed)
+            sampled_bed_time = Lognormal.Lognormal(
+                    g.mean_time_in_bed, g.sd_time_in_bed).sample()
             
             yield self.env.timeout(sampled_bed_time)
 
@@ -284,8 +279,8 @@ class Model:
                             patient.department
                         )
             
-            sampled_bed_time = random.expovariate(1.0 / 
-                                                        g.mean_time_in_bed)
+            sampled_bed_time = Lognormal.Lognormal(
+                    g.mean_time_in_bed, g.sd_time_in_bed).sample()
             
             yield self.env.timeout(sampled_bed_time)
 
