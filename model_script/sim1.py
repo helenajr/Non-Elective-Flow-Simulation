@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import time
 import Lognormal # (from a .py file, written by Tom Monks)
+from sim_tools.distributions import Exponential
 
 class g: # global
     ed_inter_visit = 37.7 # see observed_edintervist notebook
