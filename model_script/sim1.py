@@ -72,10 +72,13 @@ class Model:
         self.results_df.set_index("Patient ID", inplace=True)
 
         # Create an attribute to store the mean queuing times
-        self.mean_q_time_bed = 0
         self.ed_admissions = 0
+        self.mean_q_time_bed = 0
         self.sdec_admissions = 0
+        self.mean_q_time_sdec = 0
         self.other_admissions = 0
+        self.mean_q_time_other = 0
+        self.reneged = 0
     
     # A generator function for ed patient arrivals
     def generator_patient_arrivals(self): # ED generator
@@ -295,7 +298,10 @@ class Model:
         self.ed_admissions = (self.results_df["Department"] == "ED").sum()
         self.mean_q_time_bed = (self.results_df["Q Time Bed"].mean()) / 60.0
         self.sdec_admissions = (self.results_df["Department"] == "SDEC").sum()
+        self.mean_q_time_sdec = (self.results_df["Q Time Bed SDEC"].mean()) / 60.0
         self.other_admissions = (self.results_df["Department"] == "Other").sum()
+        self.mean_q_time_other = (self.results_df["Q Time Bed Other"].mean()) / 60.0
+        self.reneged = (self.results_df["reneged"]).sum()
 
     # The run method starts up the DES entity generators, runs the simulation,
     # and in turns calls anything we need to generate results for the run
@@ -325,23 +331,23 @@ class Trial:
         self.df_trial_results["ED Admissions"] = [0]
         self.df_trial_results["Mean Q Time Bed"] = [0.0]
         self.df_trial_results["SDEC Admissions"] = [0]
+        self.df_trial_results["Mean Q Time SDEC"] = [0.0]
         self.df_trial_results["Other Admissions"] = [0]
+        self.df_trial_results["Mean Q Time Other"] = [0.0]
+        self.df_trial_results["Reneged"] = [0]
         self.df_trial_results.set_index("Run Number", inplace=True)
 
-    # Method to calculate and store overall means.
     def calculate_means_over_trial(self):
         self.mean_q_time_trial = (
             self.df_trial_results["Mean Q Time Bed"].mean()
         )
 
-    # Method to print out the results from the trial.
     def print_trial_results(self):
-         print ("Trial Results")
-         print (self.df_trial_results)
+         display(self.df_trial_results)
 
-    def print_alltrial_summary(self):
-         print("Mean Q Time Bed")
-         print(self.df_trial_results["Mean Q Time Bed"].mean())
+    #def print_alltrial_summary(self):
+         #print("Mean Q Time Bed")
+         #print(self.df_trial_results["Mean Q Time Bed"].mean())
 
     # Method to run a trial
     def run_trial(self):
@@ -357,7 +363,10 @@ class Trial:
             self.df_trial_results.loc[run] = [my_model.ed_admissions, 
                                               my_model.mean_q_time_bed,
                                               my_model.sdec_admissions,
-                                              my_model.other_admissions]
+                                              my_model.mean_q_time_sdec,
+                                              my_model.other_admissions,
+                                              my_model.mean_q_time_other,
+                                              my_model.reneged]
             self.df_trial_results = self.df_trial_results.round(2)
 
             patient_level_results = patient_level_results.round(2)
