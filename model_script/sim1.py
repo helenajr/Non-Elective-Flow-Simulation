@@ -7,8 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import time
-import Lognormal # (from a .py file, written by Tom Monks)
-from sim_tools.distributions import Exponential
+#import Lognormal # (from a .py file, written by Tom Monks)
+from sim_tools.distributions import (Exponential, Lognormal, Uniform)
 
 class g: # global
     ed_inter_visit = 37.7 # see observed_edintervist notebook
@@ -28,7 +28,7 @@ class Patient:
         self.q_time_bed = 0
         self.start_q_bed = 0
         self.end_q_bed = 0
-        self.renege_time = random.randint(0, 9000) #random.randint(0, 9000) # some amount of time between 24hrs and 150hrs
+        self.renege_time = random.randint(0, 9000) 
         self.priority = random.randint(1,2)
         self.priority_update = random.randint(0, 9000)
         self.sdec_other_priority = 0.8
@@ -77,7 +77,12 @@ class Model:
         self.other_admissions = 0
         self.mean_q_time_other = 0
         self.reneged = 0
-    
+
+        # Initialise distributions for generators
+        self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = self.run_number*2)
+        self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = self.run_number*3)
+        self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = self.run_number*4)
+        self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = self.run_number*5)
     def generator_patient_arrivals(self): # ED generator
         while True: # infinite loop
             # Increment the patient counter by 1 (this means our first patient
@@ -95,7 +100,7 @@ class Model:
             self.env.process(self.attend_hospital(p))
 
             # Randomly sample the time to the next patient arriving.
-            sampled_inter = random.expovariate(1.0 / g.ed_inter_visit)
+            sampled_inter = self.ed_inter_visit_dist.sample()
 
             # Freeze until the inter-arrival time we sampled above has elapsed.  
             yield self.env.timeout(sampled_inter)
@@ -109,7 +114,7 @@ class Model:
 
             self.env.process(self.attend_sdec(p))
 
-            sampled_inter = random.expovariate(1.0 / g.sdec_inter_visit)
+            sampled_inter = self.sdec_inter_visit_dist.sample()
 
             yield self.env.timeout(sampled_inter)
 
@@ -122,7 +127,7 @@ class Model:
 
             self.env.process(self.attend_other(p))
 
-            sampled_inter = random.expovariate(1.0 / g.other_inter_visit)
+            sampled_inter = self.other_inter_visit_dist.sample()
 
             yield self.env.timeout(sampled_inter)
 
@@ -173,8 +178,7 @@ class Model:
                     )
                     self.results_df.at[patient.id, "reneged"] = 0
                 
-                sampled_bed_time = Lognormal.Lognormal(
-                    g.mean_time_in_bed, g.sd_time_in_bed).sample()
+                sampled_bed_time = self.mean_time_in_bed_dist.sample()
                 
                 # Freeze this function in place for the activity time we sampled
                 # above.  This is the patient spending time in the bed.
@@ -202,8 +206,7 @@ class Model:
                             patient.priority
                         )
                 
-                    sampled_bed_time = Lognormal.Lognormal(
-                        g.mean_time_in_bed, g.sd_time_in_bed).sample()
+                    sampled_bed_time = self.mean_time_in_bed_dist.sample()
                 
                     yield self.env.timeout(sampled_bed_time)
             # If patient improves enough to leave the queue
@@ -248,7 +251,7 @@ class Model:
                             patient.department
                         )
             
-            sampled_bed_time = Lognormal.Lognormal(
+            sampled_bed_time = Lognormal(
                     g.mean_time_in_bed, g.sd_time_in_bed).sample()
             
             yield self.env.timeout(sampled_bed_time)
@@ -280,7 +283,7 @@ class Model:
                             patient.department
                         )
             
-            sampled_bed_time = Lognormal.Lognormal(
+            sampled_bed_time = Lognormal(
                     g.mean_time_in_bed, g.sd_time_in_bed).sample()
             
             yield self.env.timeout(sampled_bed_time)
