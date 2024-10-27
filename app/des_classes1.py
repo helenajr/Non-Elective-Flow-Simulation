@@ -1,38 +1,34 @@
 
 import simpy
-import random
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-#import seaborn as sns
 import time
-import Lognormal # (from a .py file, written by Tom Monks)
+from sim_tools.distributions import (Exponential, Lognormal, Uniform)
 
-# Class to store global parameter values.
-class g:
+class g: # global
     ed_inter_visit = 37.7 # see observed_edintervist notebook
     sdec_inter_visit = 128.8 # see sdec intervisit notebook
     other_inter_visit = 375.7 # see other intervisit notebook.
     number_of_nelbeds = 434 # see number beds notebook
-    mean_time_in_bed = 13522 # see mean los notebook
+    mean_time_in_bed = 13500 # see mean los notebook
     sd_time_in_bed = 24297
     sim_duration = 86400 #run for 60 days
     warm_up_period = 86400 # warm up for 60 days - need to test if  this is long enough
     number_of_runs = 10
 
-# Class representing patients needing admission.
 class Patient:
     def __init__(self, p_id):
         self.id = p_id
+        self.department = ""
         self.q_time_bed = 0
         self.start_q_bed = 0
         self.end_q_bed = 0
-        self.renege_time = random.randint(0, 9000) #random.randint(0, 9000) # some amount of time between 24hrs and 150hrs
-        self.priority = random.randint(1,2)
-        self.priority_update = random.randint(0, 9000)
+        self.renege_time = 0
+        self.priority = 0
+        self.priority_update = 0
         self.sdec_other_priority = 0.8
 
-# Class representing our model of the hospital.
 class Model:
     # Constructor to set up the model for a run.  We pass in a run number when
     # we create a new model.
@@ -53,6 +49,7 @@ class Model:
         # Create a new DataFrame that will store results against patientID
         self.results_df = pd.DataFrame()
         self.results_df["Patient ID"] = [1]
+        self.results_df["Department"] = [""]
         self.results_df["InitialPriority"] = [0.0]
         self.results_df["UpdatedPriority"] = [0.0]
         self.results_df["Q Time Bed"] = [0.0]
@@ -69,7 +66,22 @@ class Model:
         self.results_df.set_index("Patient ID", inplace=True)
 
         # Create an attribute to store the mean queuing times
+        self.ed_admissions = 0
         self.mean_q_time_bed = 0
+        self.sdec_admissions = 0
+        self.mean_q_time_sdec = 0
+        self.other_admissions = 0
+        self.mean_q_time_other = 0
+        self.reneged = 0
+
+        # Initialise distributions for generators
+        self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = self.run_number*2)
+        self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = self.run_number*3)
+        self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = self.run_number*4)
+        self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = self.run_number*5)
+        self.renege_time = Uniform(0, 9000, random_seed = self.run_number*6)
+        self.priority_update = Uniform(0, 9000, random_seed = self.run_number*7)
+        self.priority = Uniform(1,2, random_seed = self.run_number*8)
     
     # A generator function for ed patient arrivals
     def generator_patient_arrivals(self):
@@ -82,13 +94,17 @@ class Model:
             # Create a new patient - an instance of the Patient Class we
             # defined above. We pass the patient counter to use as the ID.
             p = Patient(self.patient_counter)
+            p.department = "ED"
+            p.renege_time = self.renege_time.sample()
+            p.priority = round(self.priority.sample())
+            p.priority_update = self.priority_update.sample()
 
             # Tell SimPy to start up the attend_hospital function with
             # this patient
             self.env.process(self.attend_hospital(p))
 
             # Randomly sample the time to the next patient arriving.
-            sampled_inter = random.expovariate(1.0 / g.ed_inter_visit)
+            sampled_inter = self.ed_inter_visit_dist.sample()
 
             # Freeze until the inter-arrival time we sampled above has elapsed.  
             yield self.env.timeout(sampled_inter)
@@ -98,10 +114,11 @@ class Model:
             self.patient_counter += 1
             
             p = Patient(self.patient_counter)
+            p.department = "SDEC"
 
             self.env.process(self.attend_sdec(p))
 
-            sampled_inter = random.expovariate(1.0 / g.sdec_inter_visit)
+            sampled_inter = self.sdec_inter_visit_dist.sample()
 
             yield self.env.timeout(sampled_inter)
 
@@ -110,10 +127,11 @@ class Model:
             self.patient_counter += 1
             
             p = Patient(self.patient_counter)
+            p.department = "Other"
 
             self.env.process(self.attend_other(p))
 
-            sampled_inter = random.expovariate(1.0 / g.other_inter_visit)
+            sampled_inter = self.other_inter_visit_dist.sample()
 
             yield self.env.timeout(sampled_inter)
 
@@ -131,7 +149,10 @@ class Model:
             self.results_df.at[patient.id, "InitialPriority"] = (
                             patient.priority
                         )
-        
+            self.results_df.at[patient.id, "Department"] = (
+                            patient.department
+                        )
+            
         # Request a bed
         with self.nelbed.request(priority=patient.priority) as req:
             # Freeze the function until one of 3 things happens....
@@ -161,8 +182,7 @@ class Model:
                     )
                     self.results_df.at[patient.id, "reneged"] = 0
                 
-                sampled_bed_time = Lognormal.Lognormal(
-                    g.mean_time_in_bed, g.sd_time_in_bed).sample()
+                sampled_bed_time = self.mean_time_in_bed_dist.sample()
                 
                 # Freeze this function in place for the activity time we sampled
                 # above.  This is the patient spending time in the bed.
@@ -190,8 +210,7 @@ class Model:
                             patient.priority
                         )
                 
-                    sampled_bed_time = Lognormal.Lognormal(
-                        g.mean_time_in_bed, g.sd_time_in_bed).sample()
+                    sampled_bed_time = self.mean_time_in_bed_dist.sample()
                 
                     yield self.env.timeout(sampled_bed_time)
             # If patient improves enough to leave the queue
@@ -232,9 +251,11 @@ class Model:
                 self.results_df.at[patient.id, "sdec_checkout"] = (
                     patient.end_q_bed
                 )
+                self.results_df.at[patient.id, "Department"] = (
+                            patient.department
+                        )
             
-            sampled_bed_time = random.expovariate(1.0 / 
-                                                        g.mean_time_in_bed)
+            sampled_bed_time = self.mean_time_in_bed_dist.sample()
             
             yield self.env.timeout(sampled_bed_time)
 
@@ -261,9 +282,11 @@ class Model:
                 self.results_df.at[patient.id, "other_checkout"] = (
                     patient.end_q_bed
                 )
+                self.results_df.at[patient.id, "Department"] = (
+                            patient.department
+                        )
             
-            sampled_bed_time = random.expovariate(1.0 / 
-                                                        g.mean_time_in_bed)
+            sampled_bed_time = self.mean_time_in_bed_dist.sample()
             
             yield self.env.timeout(sampled_bed_time)
 
@@ -273,7 +296,13 @@ class Model:
         self.results_df.drop([1], inplace=True)
         # Take the mean of the queuing times across patients in this run of the 
         # model.
-        self.mean_q_time_bed = self.results_df["Q Time Bed"].mean()
+        self.ed_admissions = (self.results_df["Department"] == "ED").sum()
+        self.mean_q_time_bed = (self.results_df["Q Time Bed"].mean()) / 60.0
+        self.sdec_admissions = (self.results_df["Department"] == "SDEC").sum()
+        self.mean_q_time_sdec = (self.results_df["Q Time Bed SDEC"].mean()) / 60.0
+        self.other_admissions = (self.results_df["Department"] == "Other").sum()
+        self.mean_q_time_other = (self.results_df["Q Time Bed Other"].mean()) / 60.0
+        self.reneged = (self.results_df["reneged"]).sum()
 
     # The run method starts up the DES entity generators, runs the simulation,
     # and in turns calls anything we need to generate results for the run
@@ -300,7 +329,13 @@ class Trial:
     def  __init__(self):
         self.df_trial_results = pd.DataFrame()
         self.df_trial_results["Run Number"] = [0]
+        self.df_trial_results["ED Admissions"] = [0]
         self.df_trial_results["Mean Q Time Bed"] = [0.0]
+        self.df_trial_results["SDEC Admissions"] = [0]
+        self.df_trial_results["Mean Q Time SDEC"] = [0.0]
+        self.df_trial_results["Other Admissions"] = [0]
+        self.df_trial_results["Mean Q Time Other"] = [0.0]
+        self.df_trial_results["Reneged"] = [0]
         self.df_trial_results.set_index("Run Number", inplace=True)
 
     # Method to calculate and store overall means.
@@ -329,7 +364,13 @@ class Trial:
             my_model = Model(run)
             patient_level_results = my_model.run()
             
-            self.df_trial_results.loc[run] = [my_model.mean_q_time_bed]
+            self.df_trial_results.loc[run] = [my_model.ed_admissions, 
+                                              my_model.mean_q_time_bed,
+                                              my_model.sdec_admissions,
+                                              my_model.mean_q_time_sdec,
+                                              my_model.other_admissions,
+                                              my_model.mean_q_time_other,
+                                              my_model.reneged]
 
             patient_level_results = patient_level_results.round(2)
             patient_level_results['run'] = run

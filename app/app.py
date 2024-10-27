@@ -31,6 +31,7 @@ if button_run_pressed:
 
         ################
         st.write("These metrics only include those patients actually admitted")
+
         #calculating the metrics
         #Mean
         mean_pat_data = round(all_results_patient_level['q_time_bed_hours'].mean())
@@ -100,7 +101,7 @@ if button_run_pressed:
         # Display the plot
         st.pyplot(fig)
         ###################
-
+        st.dataframe(df_trial_results)
         st.dataframe(all_results_patient_level)
 
     #data0 = pd.DataFrame(data)

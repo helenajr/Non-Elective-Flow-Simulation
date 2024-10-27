@@ -1,13 +1,11 @@
 print("Importing libraries")
 
 import simpy
-import random
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import time
-#import Lognormal # (from a .py file, written by Tom Monks)
 from sim_tools.distributions import (Exponential, Lognormal, Uniform)
 
 class g: # global
@@ -15,7 +13,7 @@ class g: # global
     sdec_inter_visit = 128.8 # see sdec intervisit notebook
     other_inter_visit = 375.7 # see other intervisit notebook.
     number_of_nelbeds = 434 # see number beds notebook
-    mean_time_in_bed = 13522 # see mean los notebook
+    mean_time_in_bed = 13500 # see mean los notebook
     sd_time_in_bed = 24297
     sim_duration = 86400 #run for 60 days
     warm_up_period = 86400 # warm up for 60 days - need to test if  this is long enough
@@ -28,9 +26,9 @@ class Patient:
         self.q_time_bed = 0
         self.start_q_bed = 0
         self.end_q_bed = 0
-        self.renege_time = random.randint(0, 9000) 
-        self.priority = random.randint(1,2)
-        self.priority_update = random.randint(0, 9000)
+        self.renege_time = 0
+        self.priority = 0
+        self.priority_update = 0
         self.sdec_other_priority = 0.8
 
 class Model:
@@ -83,6 +81,10 @@ class Model:
         self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = self.run_number*3)
         self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = self.run_number*4)
         self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = self.run_number*5)
+        self.renege_time = Uniform(0, 9000, random_seed = self.run_number*6)
+        self.priority_update = Uniform(0, 9000, random_seed = self.run_number*7)
+        self.priority = Uniform(1,2, random_seed = self.run_number*8)
+
     def generator_patient_arrivals(self): # ED generator
         while True: # infinite loop
             # Increment the patient counter by 1 (this means our first patient
@@ -94,6 +96,9 @@ class Model:
             # defined above. We pass the patient counter to use as the ID.
             p = Patient(self.patient_counter)
             p.department = "ED"
+            p.renege_time = self.renege_time.sample()
+            p.priority = round(self.priority.sample())
+            p.priority_update = self.priority_update.sample()
 
             # Tell SimPy to start up the attend_hospital function with
             # this patient
@@ -251,8 +256,7 @@ class Model:
                             patient.department
                         )
             
-            sampled_bed_time = Lognormal(
-                    g.mean_time_in_bed, g.sd_time_in_bed).sample()
+            sampled_bed_time = self.mean_time_in_bed_dist.sample()
             
             yield self.env.timeout(sampled_bed_time)
 
@@ -283,8 +287,7 @@ class Model:
                             patient.department
                         )
             
-            sampled_bed_time = Lognormal(
-                    g.mean_time_in_bed, g.sd_time_in_bed).sample()
+            sampled_bed_time = self.mean_time_in_bed_dist.sample()
             
             yield self.env.timeout(sampled_bed_time)
 
