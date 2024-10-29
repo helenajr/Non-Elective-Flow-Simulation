@@ -339,17 +339,24 @@ class Trial:
         self.df_trial_results["Reneged"] = [0]
         self.df_trial_results.set_index("Run Number", inplace=True)
 
-    def calculate_means_over_trial(self):
+    def calculate_trial_summary(self):
         self.mean_q_time_trial = (
             self.df_trial_results["Mean Q Time Bed"].mean()
         )
 
+        #pandas dataframe to hold the results
+        self.trial_summary_df = pd.DataFrame()
+        self.trial_summary_df["Metric"] = ["Mean Q Time (Hrs)", "Min Q Time"]
+        self.trial_summary_df["Results"] = [self.mean_q_time_trial,
+                                            5]
+
     def print_trial_results(self):
          display(self.df_trial_results)
 
-    #def print_alltrial_summary(self):
-         #print("Mean Q Time Bed")
-         #print(self.df_trial_results["Mean Q Time Bed"].mean())
+    def print_alltrial_summary(self):
+         print("Mean Q Time Bed")
+         print(self.mean_q_time_trial)
+         display(self.trial_summary_df)
 
     # Method to run a trial
     def run_trial(self):
@@ -383,7 +390,9 @@ class Trial:
         self.print_trial_results()
         #self.print_alltrial_summary()
 
-        self.calculate_means_over_trial()
+        self.calculate_trial_summary()
+
+        self.print_alltrial_summary()
 
         return self.df_trial_results, all_results_patient_level, self.mean_q_time_trial
 
@@ -396,6 +405,9 @@ start_time = time.time()
 # Call the run_trial method of our Trial object
 df_trial_results, all_results_patient_level, means_over_trial =  my_trial.run_trial()
 
+# After running the trial print the results
+#my_trial.print_trial_results()
+#my_trial.print_alltrial_summary()
 
 end_time = time.time()
 elapsed_time = end_time - start_time
