@@ -352,35 +352,86 @@ class Trial:
         self.df_trial_results["Reneged"] = [0]
         self.df_trial_results.set_index("Run Number", inplace=True)
 
-    def calculate_trial_summary(self):
+    def calculate_trial_summary(self): # calculate single summary stat across all runs
         self.mean_q_time_trial = (
             self.df_trial_results["Mean Q Time Bed"].mean()
         )
-        self.std_q_time_trial = (
+        self.std_mean_q_time_trial = (
             self.df_trial_results["Mean Q Time Bed"].std()
         )
-        self.se_q_time_trial = self.std_q_time_trial / np.sqrt(g.number_of_runs)
-        self.lowerci_q_time_trial, self.upperci_q_time_trial = (
-            stats.norm.interval(0.95, loc=self.mean_q_time_trial, scale=self.se_q_time_trial)
+        self.se_mean_q_time_trial = self.std_mean_q_time_trial / np.sqrt(g.number_of_runs)
+        self.lowerci_mean_q_time_trial, self.upperci_mean_q_time_trial = (
+            stats.norm.interval(0.95, loc=self.mean_q_time_trial, scale=self.se_mean_q_time_trial)
         )
-        self.min_q_time_trial = (
+        self.min_mean_q_time_trial = (
             self.df_trial_results["Mean Q Time Bed"].min()
         )
-        self.max_q_time_trial = (
+        self.max_mean_q_time_trial = (
             self.df_trial_results["Mean Q Time Bed"].max()
         )
+        #Min Q Time
+        self.mean_min = (
+            self.df_trial_results["Min Q Time Bed"].mean()
+        )
+        self.std_min = (
+            self.df_trial_results["Min Q Time Bed"].std()
+        )
+        self.se_min = self.std_min / np.sqrt(g.number_of_runs)
+        self.lowerci_min, self.upperci_min = (
+            stats.norm.interval(0.95, loc=self.mean_min, scale=self.se_min)
+        )
+        self.min_min = (
+            self.df_trial_results["Min Q Time Bed"].min()
+        )
+        self.max_min = (
+            self.df_trial_results["Min Q Time Bed"].max()
+        )
+        #Max Q Time
+        self.mean_max = (
+            self.df_trial_results["Max Q Time Bed"].mean()
+        )
+        self.std_max = (
+            self.df_trial_results["Max Q Time Bed"].std()
+        )
+        self.se_max = self.std_max / np.sqrt(g.number_of_runs)
+        self.lowerci_max, self.upperci_max = (
+            stats.norm.interval(0.95, loc=self.mean_max, scale=self.se_max)
+        )
+        self.min_max = (
+            self.df_trial_results["Max Q Time Bed"].min()
+        )
+        self.max_max = (
+            self.df_trial_results["Max Q Time Bed"].max()
+        )
+        
 
         #pandas dataframe to hold the results
         self.trial_summary_df = pd.DataFrame()
-        self.trial_summary_df["Metric"] = ["Mean Q Time (Hrs)", "Min Q Time"]
+        self.trial_summary_df["Metric"] = ["Mean Q Time (Hrs)", 
+                                           "Min Q Time",
+                                           "Max Q Time (Hrs)"]
         self.trial_summary_df["Results"] = [self.mean_q_time_trial,
-                                            5]
-        self.trial_summary_df["St. dev"] = [self.std_q_time_trial, 0]
-        self.trial_summary_df["St. error"] = [self.se_q_time_trial, 0]
-        self.trial_summary_df["Lower 95% CI"] = [self.lowerci_q_time_trial, 0]
-        self.trial_summary_df["Upper 95% CI"] = [self.upperci_q_time_trial, 0]
-        self.trial_summary_df["Min"] = [self.min_q_time_trial, 0]
-        self.trial_summary_df["Max"] = [self.max_q_time_trial, 0]
+                                            self.mean_min,
+                                            self.mean_max]
+        self.trial_summary_df["St. dev"] = [self.std_mean_q_time_trial,
+                                            self.std_min,
+                                            self.std_max]
+        self.trial_summary_df["St. error"] = [self.se_mean_q_time_trial,
+                                              self.se_min,
+                                              self.se_max]
+        self.trial_summary_df["Lower 95% CI"] = [self.lowerci_mean_q_time_trial,
+                                                 self.lowerci_min,
+                                                 self.lowerci_max]
+        self.trial_summary_df["Upper 95% CI"] = [self.upperci_mean_q_time_trial,
+                                                 self.upperci_min,
+                                                 self.upperci_max]
+        self.trial_summary_df["Min"] = [self.min_mean_q_time_trial,
+                                        self.min_min,
+                                        self.min_max]
+        self.trial_summary_df["Max"] = [self.max_mean_q_time_trial,
+                                        self.max_min,
+                                        self.max_max]
+        self.trial_summary_df = self.trial_summary_df.round(2)
 
     def print_trial_results(self):
          display(self.df_trial_results)
