@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import time
 from sim_tools.distributions import (Exponential, Lognormal, Uniform)
+import scipy.stats as stats
 
 class g: # global
     ed_inter_visit = 37.7 # see observed_edintervist notebook
@@ -70,6 +71,11 @@ class Model:
         # Create an attribute to store the mean queuing times
         self.ed_admissions = 0
         self.mean_q_time_bed = 0
+        self.min_q_time_bed = 0
+        self.max_q_time_bed = 0
+        self.perf_4hr = 0
+        #self.dta_12hr = 0
+        #self.q_time_bed_95 = 0
         self.sdec_admissions = 0
         self.mean_q_time_sdec = 0
         self.other_admissions = 0
@@ -299,6 +305,11 @@ class Model:
         # model.
         self.ed_admissions = (self.results_df["Department"] == "ED").sum()
         self.mean_q_time_bed = (self.results_df["Q Time Bed"].mean()) / 60.0
+        self.min_q_time_bed = (self.results_df["Q Time Bed"].min()) / 60.0
+        self.max_q_time_bed = (self.results_df["Q Time Bed"].max()) / 60.0
+        self.perf_4hr = ((self.results_df["Q Time Bed"] < 240).sum() / self.ed_admissions)
+        self.dta_12hr = round((self.results_df["Q Time Bed"] > 720).sum() / 60.0) # is this correct?
+        self.q_time_bed_95 = self.results_df["Q Time Bed"].quantile(0.95) / 60.0
         self.sdec_admissions = (self.results_df["Department"] == "SDEC").sum()
         self.mean_q_time_sdec = (self.results_df["Q Time Bed SDEC"].mean()) / 60.0
         self.other_admissions = (self.results_df["Department"] == "Other").sum()
@@ -316,8 +327,6 @@ class Model:
         # Run the model for the duration specified in g class
         self.env.run(until=(g.sim_duration + g.warm_up_period))
 
-        # Now the simulation run has finished, call the method that calculates
-        # run results
         self.calculate_run_results()
 
         # Return patient level results for this run
@@ -325,13 +334,17 @@ class Model:
 
 # Class representing a Trial for our simulation - a batch of simulation runs.
 class Trial:
-    # The constructor sets up a pandas dataframe that will store the key
-    # results from each run against run number, with run number as the index.
+    # Empty df that will store results from each run against run number.
     def  __init__(self):
         self.df_trial_results = pd.DataFrame()
         self.df_trial_results["Run Number"] = [0]
         self.df_trial_results["ED Admissions"] = [0]
         self.df_trial_results["Mean Q Time Bed"] = [0.0]
+        self.df_trial_results["Min Q Time Bed"] = [0.0]
+        self.df_trial_results["Max Q Time Bed"] = [0.0]
+        self.df_trial_results["4hr (DTA) Performance"] = [""]
+        self.df_trial_results["12hr DTAs"] = [0]
+        self.df_trial_results["95th Percentile Q"] = [0.0]
         self.df_trial_results["SDEC Admissions"] = [0]
         self.df_trial_results["Mean Q Time SDEC"] = [0.0]
         self.df_trial_results["Other Admissions"] = [0]
@@ -343,19 +356,36 @@ class Trial:
         self.mean_q_time_trial = (
             self.df_trial_results["Mean Q Time Bed"].mean()
         )
+        self.std_q_time_trial = (
+            self.df_trial_results["Mean Q Time Bed"].std()
+        )
+        self.se_q_time_trial = self.std_q_time_trial / np.sqrt(g.number_of_runs)
+        self.lowerci_q_time_trial, self.upperci_q_time_trial = (
+            stats.norm.interval(0.95, loc=self.mean_q_time_trial, scale=self.se_q_time_trial)
+        )
+        self.min_q_time_trial = (
+            self.df_trial_results["Mean Q Time Bed"].min()
+        )
+        self.max_q_time_trial = (
+            self.df_trial_results["Mean Q Time Bed"].max()
+        )
 
         #pandas dataframe to hold the results
         self.trial_summary_df = pd.DataFrame()
         self.trial_summary_df["Metric"] = ["Mean Q Time (Hrs)", "Min Q Time"]
         self.trial_summary_df["Results"] = [self.mean_q_time_trial,
                                             5]
+        self.trial_summary_df["St. dev"] = [self.std_q_time_trial, 0]
+        self.trial_summary_df["St. error"] = [self.se_q_time_trial, 0]
+        self.trial_summary_df["Lower 95% CI"] = [self.lowerci_q_time_trial, 0]
+        self.trial_summary_df["Upper 95% CI"] = [self.upperci_q_time_trial, 0]
+        self.trial_summary_df["Min"] = [self.min_q_time_trial, 0]
+        self.trial_summary_df["Max"] = [self.max_q_time_trial, 0]
 
     def print_trial_results(self):
          display(self.df_trial_results)
 
     def print_alltrial_summary(self):
-         print("Mean Q Time Bed")
-         print(self.mean_q_time_trial)
          display(self.trial_summary_df)
 
     # Method to run a trial
@@ -368,15 +398,22 @@ class Trial:
         for run in range(g.number_of_runs):
             my_model = Model(run)
             patient_level_results = my_model.run()
-            
+
+            #populate df with results from each run
             self.df_trial_results.loc[run] = [my_model.ed_admissions, 
                                               my_model.mean_q_time_bed,
+                                              my_model.min_q_time_bed,
+                                              my_model.max_q_time_bed,
+                                              "{:.0%}".format(my_model.perf_4hr),
+                                              my_model.dta_12hr,
+                                              my_model.q_time_bed_95,
                                               my_model.sdec_admissions,
                                               my_model.mean_q_time_sdec,
                                               my_model.other_admissions,
                                               my_model.mean_q_time_other,
                                               my_model.reneged]
             self.df_trial_results = self.df_trial_results.round(2)
+            #self.df_trial_results.style.format({"4hr (DTA) Performance": "{:.2%}"})
 
             patient_level_results = patient_level_results.round(2)
             patient_level_results['run'] = run
