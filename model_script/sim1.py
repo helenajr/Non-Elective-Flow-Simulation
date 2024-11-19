@@ -342,7 +342,7 @@ class Trial:
         self.df_trial_results["Mean Q Time Bed"] = [0.0]
         self.df_trial_results["Min Q Time Bed"] = [0.0]
         self.df_trial_results["Max Q Time Bed"] = [0.0]
-        self.df_trial_results["4hr (DTA) Performance"] = [""]
+        self.df_trial_results["4hr (DTA) Performance"] = [0.0]
         self.df_trial_results["12hr DTAs"] = [0]
         self.df_trial_results["95th Percentile Q"] = [0.0]
         self.df_trial_results["SDEC Admissions"] = [0]
@@ -353,6 +353,24 @@ class Trial:
         self.df_trial_results.set_index("Run Number", inplace=True)
 
     def calculate_trial_summary(self): # calculate single summary stat across all runs
+        #ED Admissions
+        self.mean_admission = (
+            self.df_trial_results["ED Admissions"].mean()
+        )
+        self.std_admission = (
+            self.df_trial_results["ED Admissions"].std()
+        )
+        self.se_admission = self.std_admission / np.sqrt(g.number_of_runs)
+        self.lowerci_admission, self.upperci_admission = (
+            stats.norm.interval(0.95, loc=self.mean_admission, scale=self.se_admission)
+        )
+        self.min_admission = (
+            self.df_trial_results["ED Admissions"].min()
+        )
+        self.max_admission = (
+            self.df_trial_results["ED Admissions"].max()
+        )
+        #Mean Q Time
         self.mean_q_time_trial = (
             self.df_trial_results["Mean Q Time Bed"].mean()
         )
@@ -403,34 +421,166 @@ class Trial:
         self.max_max = (
             self.df_trial_results["Max Q Time Bed"].max()
         )
-        
+        #4hr Performance
+        self.mean_4hr = (
+            self.df_trial_results["4hr (DTA) Performance"].mean()
+        )
+        self.std_4hr = (
+            self.df_trial_results["4hr (DTA) Performance"].std()
+        )
+        self.se_4hr = self.std_4hr / np.sqrt(g.number_of_runs)
+        self.lowerci_4hr, self.upperci_4hr = (
+            stats.norm.interval(0.95, loc=self.mean_4hr, scale=self.se_4hr)
+        )
+        self.min_4hr = (
+            self.df_trial_results["4hr (DTA) Performance"].min()
+        )
+        self.max_4hr = (
+            self.df_trial_results["4hr (DTA) Performance"].max()
+        )
+        #12hr DTAs
+        self.mean_12hr = (
+            self.df_trial_results["12hr DTAs"].mean()
+        )
+        self.std_12hr = (
+            self.df_trial_results["12hr DTAs"].std()
+        )
+        self.se_12hr = self.std_12hr / np.sqrt(g.number_of_runs)
+        self.lowerci_12hr, self.upperci_12hr = (
+            stats.norm.interval(0.95, loc=self.mean_12hr, scale=self.se_12hr)
+        )
+        self.min_12hr = (
+            self.df_trial_results["12hr DTAs"].min()
+        )
+        self.max_12hr = (
+            self.df_trial_results["12hr DTAs"].max()
+        )
+        #95th Percentile
+        self.mean_95 = (
+            self.df_trial_results["95th Percentile Q"].mean()
+        )
+        self.std_95 = (
+            self.df_trial_results["95th Percentile Q"].std()
+        )
+        self.se_95 = self.std_95 / np.sqrt(g.number_of_runs)
+        self.lowerci_95, self.upperci_95 = (
+            stats.norm.interval(0.95, loc=self.mean_95, scale=self.se_95)
+        )
+        self.min_95 = (
+            self.df_trial_results["95th Percentile Q"].min()
+        )
+        self.max_95 = (
+            self.df_trial_results["95th Percentile Q"].max()
+        )
+        #SDEC Admissions
+        self.mean_sdec = (
+            self.df_trial_results["SDEC Admissions"].mean()
+        )
+        self.std_sdec = (
+            self.df_trial_results["SDEC Admissions"].std()
+        )
+        self.se_sdec = self.std_sdec / np.sqrt(g.number_of_runs)
+        self.lowerci_sdec, self.upperci_sdec = (
+            stats.norm.interval(0.95, loc=self.mean_sdec, scale=self.se_sdec)
+        )
+        self.min_sdec = (
+            self.df_trial_results["SDEC Admissions"].min()
+        )
+        self.max_sdec = (
+            self.df_trial_results["SDEC Admissions"].max()
+        )
+        #Reneged
+        self.mean_reneged = (
+            self.df_trial_results["Reneged"].mean()
+        )
+        self.std_reneged = (
+            self.df_trial_results["Reneged"].std()
+        )
+        self.se_reneged = self.std_reneged / np.sqrt(g.number_of_runs)
+        self.lowerci_reneged, self.upperci_reneged = (
+            stats.norm.interval(0.95, loc=self.mean_reneged, scale=self.se_reneged)
+        )
+        self.min_reneged = (
+            self.df_trial_results["Reneged"].min()
+        )
+        self.max_reneged = (
+            self.df_trial_results["Reneged"].max()
+        )
 
         #pandas dataframe to hold the results
         self.trial_summary_df = pd.DataFrame()
-        self.trial_summary_df["Metric"] = ["Mean Q Time (Hrs)", 
+        self.trial_summary_df["Metric"] = ["ED Admissions",
+                                           "Mean Q Time (Hrs)", 
                                            "Min Q Time",
-                                           "Max Q Time (Hrs)"]
-        self.trial_summary_df["Results"] = [self.mean_q_time_trial,
+                                           "Max Q Time (Hrs)",
+                                           "4hr (DTA) Performance",
+                                           "12hr DTAs",
+                                           "95th Percentile Q",
+                                           "SDEC Admissions",
+                                           "Reneged"]
+        self.trial_summary_df["Mean"] = [self.mean_admission,
+                                            self.mean_q_time_trial,
                                             self.mean_min,
-                                            self.mean_max]
-        self.trial_summary_df["St. dev"] = [self.std_mean_q_time_trial,
+                                            self.mean_max,
+                                            self.mean_4hr,
+                                            self.mean_12hr,
+                                            self.mean_95,
+                                            self.mean_sdec,
+                                            self.mean_reneged]
+        self.trial_summary_df["St. dev"] = [self.std_admission,
+                                            self.std_mean_q_time_trial,
                                             self.std_min,
-                                            self.std_max]
-        self.trial_summary_df["St. error"] = [self.se_mean_q_time_trial,
+                                            self.std_max,
+                                            self.std_4hr,
+                                            self.std_12hr,
+                                            self.std_95,
+                                            self.std_sdec,
+                                            self.std_reneged]
+        self.trial_summary_df["St. error"] = [self.se_admission,
+                                              self.se_mean_q_time_trial,
                                               self.se_min,
-                                              self.se_max]
-        self.trial_summary_df["Lower 95% CI"] = [self.lowerci_mean_q_time_trial,
+                                              self.se_max,
+                                              self.se_4hr,
+                                              self.se_12hr,
+                                              self.se_95,
+                                              self.se_sdec,
+                                              self.se_reneged]
+        self.trial_summary_df["Lower 95% CI"] = [self.lowerci_admission,
+                                                 self.lowerci_mean_q_time_trial,
                                                  self.lowerci_min,
-                                                 self.lowerci_max]
-        self.trial_summary_df["Upper 95% CI"] = [self.upperci_mean_q_time_trial,
+                                                 self.lowerci_max,
+                                                 self.lowerci_4hr,
+                                                 self.lowerci_12hr,
+                                                 self.lowerci_95,
+                                                 self.lowerci_sdec,
+                                                 self.lowerci_reneged]
+        self.trial_summary_df["Upper 95% CI"] = [self.upperci_admission,
+                                                 self.upperci_mean_q_time_trial,
                                                  self.upperci_min,
-                                                 self.upperci_max]
-        self.trial_summary_df["Min"] = [self.min_mean_q_time_trial,
+                                                 self.upperci_max,
+                                                 self.upperci_4hr,
+                                                 self.upperci_12hr,
+                                                 self.upperci_95,
+                                                 self.upperci_sdec,
+                                                 self.upperci_reneged]
+        self.trial_summary_df["Min"] = [self.min_admission,
+                                        self.min_mean_q_time_trial,
                                         self.min_min,
-                                        self.min_max]
-        self.trial_summary_df["Max"] = [self.max_mean_q_time_trial,
+                                        self.min_max,
+                                        self.min_4hr,
+                                        self.min_12hr,
+                                        self.min_95,
+                                        self.min_sdec,
+                                        self.min_reneged]
+        self.trial_summary_df["Max"] = [self.max_admission,
+                                        self.max_mean_q_time_trial,
                                         self.max_min,
-                                        self.max_max]
+                                        self.max_max,
+                                        self.max_4hr,
+                                        self.max_12hr,
+                                        self.max_95,
+                                        self.max_sdec,
+                                        self.max_reneged]
         self.trial_summary_df = self.trial_summary_df.round(2)
 
     def print_trial_results(self):
@@ -455,7 +605,7 @@ class Trial:
                                               my_model.mean_q_time_bed,
                                               my_model.min_q_time_bed,
                                               my_model.max_q_time_bed,
-                                              "{:.0%}".format(my_model.perf_4hr),
+                                              my_model.perf_4hr,
                                               my_model.dta_12hr,
                                               my_model.q_time_bed_95,
                                               my_model.sdec_admissions,
@@ -513,38 +663,38 @@ print("Calculating wait time metrics.....")
 print("These metrics only include those patients actually admitted")
 #calculating the metrics
 #Mean
-mean_pat_data = round(all_results_patient_level['q_time_bed_hours'].mean())
+# mean_pat_data = round(all_results_patient_level['q_time_bed_hours'].mean())
 
-#Min
-min_pat_data = round(all_results_patient_level['q_time_bed_hours'].min())
+# #Min
+# min_pat_data = round(all_results_patient_level['q_time_bed_hours'].min())
 
-#Max
-max_pat_data = round(all_results_patient_level['q_time_bed_hours'].max())
+# #Max
+# max_pat_data = round(all_results_patient_level['q_time_bed_hours'].max())
 
-#95th percentile
-q_pat_data = round(all_results_patient_level['q_time_bed_hours'].quantile(0.95))
+# #95th percentile
+# q_pat_data = round(all_results_patient_level['q_time_bed_hours'].quantile(0.95))
 
-#4hr performance
-perf4hr_pat_data = "{:.0%}".format(all_results_patient_level['under4hrflag'].mean())
+# #4hr performance
+# perf4hr_pat_data = "{:.0%}".format(all_results_patient_level['under4hrflag'].mean())
 
-#12hr DTAs per day
-dtasperday = round((all_results_patient_level['dta12hrflag'].sum() / g.number_of_runs) / 60.0)
+# #12hr DTAs per day
+# dtasperday = round((all_results_patient_level['dta12hrflag'].sum() / g.number_of_runs) / 60.0)
 
-#Patients reneged from ED
-reneged = round(all_results_patient_level['reneged'].sum() / g.number_of_runs)
+# #Patients reneged from ED
+# reneged = round(all_results_patient_level['reneged'].sum() / g.number_of_runs)
 
 #save these in a df
 # according to chat you want to make it into a dictionary first
-data = {
-    "Metric": ["Mean Q Time (Hrs)", "Min Q Time", "Max Q Time (Hrs)", "4hr (DTA) Performance",
-                "12hr DTAs per day", "95th Percentile Q Time (Hrs)", "Reneged"],
-    "Results": [mean_pat_data, min_pat_data, max_pat_data, perf4hr_pat_data, 
-                dtasperday, q_pat_data, reneged]
-}
+# data = {
+#     "Metric": ["Mean Q Time (Hrs)", "Min Q Time", "Max Q Time (Hrs)", "4hr (DTA) Performance",
+#                 "12hr DTAs per day", "95th Percentile Q Time (Hrs)", "Reneged"],
+#     "Results": [mean_pat_data, min_pat_data, max_pat_data, perf4hr_pat_data, 
+#                 dtasperday, q_pat_data, reneged]
+# }
 
-df = pd.DataFrame(data)
+# df = pd.DataFrame(data)
 
-display(df)
+#display(df)
 
 
 
@@ -560,23 +710,24 @@ sns.histplot(all_results_patient_level['q_time_bed_hours'], bins=range(int(all_r
 # Set the boundary for the bins to start at 0
 plt.xlim(left=0)
 
+
 # Add vertical lines
-plt.axvline(x=mean_pat_data, color='tomato', linestyle='--', linewidth=1, label='Mean Q Time', zorder=0)
+plt.axvline(x=my_trial.mean_q_time_trial, color='tomato', linestyle='--', linewidth=1, label='Mean Q Time', zorder=0)
 plt.axvline(x=4, color='mediumturquoise', linestyle='--', linewidth=1, label='4 Hours', zorder=0)
 plt.axvline(x=12, color='royalblue', linestyle='--', linewidth=1, label='12 Hours', zorder=0)
-plt.axvline(x=q_pat_data, color='goldenrod', linestyle='--', linewidth=1, zorder=0)
-plt.axvline(x=max_pat_data, color='slategrey', linestyle='--', linewidth=1, zorder=0)
+plt.axvline(x=my_trial.mean_95, color='goldenrod', linestyle='--', linewidth=1, zorder=0)
+plt.axvline(x=my_trial.mean_max, color='slategrey', linestyle='--', linewidth=1, zorder=0)
 
 # Add labels to the lines
-plt.text(mean_pat_data + 2, plt.ylim()[1] * 0.95, f'Mean Q Time: {mean_pat_data} hrs', color='tomato', ha='left', va='top', fontsize=10, rotation=90,
+plt.text(my_trial.mean_q_time_trial + 2, plt.ylim()[1] * 0.95, f'Mean Q Time: {round(my_trial.mean_q_time_trial)} hrs', color='tomato', ha='left', va='top', fontsize=10, rotation=90,
             bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-plt.text(4 + 2, plt.ylim()[1] * 0.95, f'4 Hr Performance: {perf4hr_pat_data}', color='mediumturquoise', ha='left', va='top', fontsize=10, rotation=90,
+plt.text(4 + 2, plt.ylim()[1] * 0.95, f'4 Hr DTA Performance: {"{:.0%}".format(my_trial.mean_4hr)}', color='mediumturquoise', ha='left', va='top', fontsize=10, rotation=90,
             bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-plt.text(12 + 2, plt.ylim()[1] * 0.95, f'12 Hr DTAs per day: {dtasperday}', color='royalblue', ha='left', va='top', fontsize=10, rotation=90,
+plt.text(12 + 2, plt.ylim()[1] * 0.95, f'12 Hr DTAs per day: {round(my_trial.mean_12hr)}', color='royalblue', ha='left', va='top', fontsize=10, rotation=90,
             bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-plt.text(q_pat_data + 2, plt.ylim()[1] * 0.95, f'95th Percentile Q Time: {q_pat_data} hrs', color='goldenrod', ha='left', va='top', fontsize=10, rotation=90,
+plt.text(my_trial.mean_95 + 2, plt.ylim()[1] * 0.95, f'95th Percentile Q Time: {round(my_trial.mean_95)} hrs', color='goldenrod', ha='left', va='top', fontsize=10, rotation=90,
             bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-plt.text(max_pat_data + 1, plt.ylim()[1] * 0.95, f'Max Q Time: {max_pat_data} hrs', color='slategrey', ha='left', va='top', fontsize=10, rotation=90)
+plt.text(my_trial.mean_max + 2, plt.ylim()[1] * 0.95, f'Max Q Time: {round(my_trial.mean_max)} hrs', color='slategrey', ha='left', va='top', fontsize=10, rotation=90)
 
 # Add labels and title if necessary
 plt.xlabel('Admission Delays (Hours)')
@@ -584,4 +735,60 @@ plt.ylabel('Frequency')
 plt.title('Histogram of Admission Delays')
 
 # Display the plot
+plt.show()
+
+### new plot
+# Create the histogram
+plt.figure(figsize=(8, 6))
+
+sns.histplot(
+    all_results_patient_level['q_time_bed_hours'], 
+    bins=range(int(all_results_patient_level['q_time_bed_hours'].min()), 
+               int(all_results_patient_level['q_time_bed_hours'].max()) + 1, 1), 
+    kde=False
+)
+
+# Set the boundary for the bins to start at 0
+plt.xlim(left=0)
+
+# Add vertical lines with labels
+lines = [
+    {"x": my_trial.mean_q_time_trial, "color": "tomato", "label": f"Mean Q Time: {round(my_trial.mean_q_time_trial)} hrs"},
+    {"x": 4, "color": "mediumturquoise", "label": f"4 Hr DTA Performance: {'{:.0%}'.format(my_trial.mean_4hr)}"},
+    {"x": 12, "color": "royalblue", "label": f"12 Hr DTAs per day: {round(my_trial.mean_12hr)}"},
+    {"x": my_trial.mean_95, "color": "goldenrod", "label": f"95th Percentile Q Time: {round(my_trial.mean_95)} hrs"},
+    {"x": my_trial.mean_max, "color": "slategrey", "label": f"Max Q Time: {round(my_trial.mean_max)} hrs"},
+]
+
+for line in lines:
+    # Add the vertical line
+    plt.axvline(x=line["x"], color=line["color"], linestyle='--', linewidth=1, zorder=0)
+    
+    # Add label with text
+    plt.text(line["x"] + 2, plt.ylim()[1] * 0.95, line["label"], 
+             color=line["color"], ha='left', va='top', fontsize=10, rotation=90,
+             bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
+
+# Add transparent rectangles for confidence intervals
+ci_ranges = [
+    {"lower": my_trial.lowerci_mean_q_time_trial, 
+     "upper": my_trial.upperci_mean_q_time_trial, "color": "tomato"},
+    {"lower": my_trial.lowerci_95, 
+     "upper": my_trial.upperci_95, "color": "goldenrod"},
+    {"lower": my_trial.lowerci_max, 
+     "upper": my_trial.upperci_max, "color": "slategrey"},
+]
+
+y_min, y_max = plt.ylim()
+
+for ci in ci_ranges:
+    plt.fill_betweenx(
+        [y_min, y_max], 
+        ci["lower"], 
+        ci["upper"], 
+        color=ci["color"], 
+        alpha=0.2, 
+        zorder=0
+    )
+
 plt.show()
