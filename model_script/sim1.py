@@ -507,6 +507,7 @@ class Trial:
             self.df_trial_results["Reneged"].max()
         )
 
+
         #pandas dataframe to hold the results
         self.trial_summary_df = pd.DataFrame()
         self.trial_summary_df["Metric"] = ["ED Admissions",
@@ -582,12 +583,22 @@ class Trial:
                                         self.max_sdec,
                                         self.max_reneged]
         self.trial_summary_df = self.trial_summary_df.round(2)
+        self.trial_summary_df.set_index("Metric", inplace=True)
+
 
     def print_trial_results(self):
+         self.df_trial_results["4hr (DTA) Performance"] = (self.df_trial_results["4hr (DTA) Performance"] * 100).apply(round).astype(str) + '%'
          display(self.df_trial_results)
 
     def print_alltrial_summary(self):
-         display(self.trial_summary_df)
+         # Format the 4hr (DTA) Performance row values as percentages
+        row_name = "4hr (DTA) Performance"
+        columns_to_format = ["Mean", "St. dev", "St. error", "Lower 95% CI", "Upper 95% CI", "Min", "Max"]
+
+        for col in columns_to_format:
+            self.trial_summary_df.loc[row_name, col] = '{:.0%}'.format(self.trial_summary_df.loc[row_name, col])
+        
+        display(self.trial_summary_df)
 
     # Method to run a trial
     def run_trial(self):
@@ -623,14 +634,8 @@ class Trial:
         
         #stick all the individual results together
         all_results_patient_level = pd.concat(results_dfs)
-                                              
-        # Once the trial (ie all runs) has completed, print the final results
-        self.print_trial_results()
-        #self.print_alltrial_summary()
-
+                            
         self.calculate_trial_summary()
-
-        self.print_alltrial_summary()
 
         return self.df_trial_results, all_results_patient_level, self.mean_q_time_trial
 
@@ -644,13 +649,12 @@ start_time = time.time()
 df_trial_results, all_results_patient_level, means_over_trial =  my_trial.run_trial()
 
 # After running the trial print the results
-#my_trial.print_trial_results()
-#my_trial.print_alltrial_summary()
+my_trial.print_trial_results()
+my_trial.print_alltrial_summary()
 
 end_time = time.time()
 elapsed_time = end_time - start_time
 print(f"That took {round(elapsed_time)} seconds")
-print("Doing some transformations")
 
 #Convert wait times into hours
 all_results_patient_level['q_time_bed_hours'] = all_results_patient_level['Q Time Bed'] / 60.0
@@ -658,86 +662,7 @@ all_results_patient_level['under4hrflag'] = np.where(all_results_patient_level['
 all_results_patient_level['dta12hrflag'] = np.where(all_results_patient_level['q_time_bed_hours'] > 12, 1, 0)
 all_results_patient_level['q_time_bed_or_renege'] = all_results_patient_level['Q Time Bed|Renege'] / 60.0
 
-################
-print("Calculating wait time metrics.....")
-print("These metrics only include those patients actually admitted")
-#calculating the metrics
-#Mean
-# mean_pat_data = round(all_results_patient_level['q_time_bed_hours'].mean())
-
-# #Min
-# min_pat_data = round(all_results_patient_level['q_time_bed_hours'].min())
-
-# #Max
-# max_pat_data = round(all_results_patient_level['q_time_bed_hours'].max())
-
-# #95th percentile
-# q_pat_data = round(all_results_patient_level['q_time_bed_hours'].quantile(0.95))
-
-# #4hr performance
-# perf4hr_pat_data = "{:.0%}".format(all_results_patient_level['under4hrflag'].mean())
-
-# #12hr DTAs per day
-# dtasperday = round((all_results_patient_level['dta12hrflag'].sum() / g.number_of_runs) / 60.0)
-
-# #Patients reneged from ED
-# reneged = round(all_results_patient_level['reneged'].sum() / g.number_of_runs)
-
-#save these in a df
-# according to chat you want to make it into a dictionary first
-# data = {
-#     "Metric": ["Mean Q Time (Hrs)", "Min Q Time", "Max Q Time (Hrs)", "4hr (DTA) Performance",
-#                 "12hr DTAs per day", "95th Percentile Q Time (Hrs)", "Reneged"],
-#     "Results": [mean_pat_data, min_pat_data, max_pat_data, perf4hr_pat_data, 
-#                 dtasperday, q_pat_data, reneged]
-# }
-
-# df = pd.DataFrame(data)
-
-#display(df)
-
-
-
-#####################
-#plotting and showing a single figure
-
-# Create the histogram
-plt.figure(figsize=(8, 6))
-sns.histplot(all_results_patient_level['q_time_bed_hours'], bins=range(int(all_results_patient_level['q_time_bed_hours'].min()), 
-                                                      int(all_results_patient_level['q_time_bed_hours'].max()) + 1, 1), 
-             kde=False)
-
-# Set the boundary for the bins to start at 0
-plt.xlim(left=0)
-
-
-# Add vertical lines
-plt.axvline(x=my_trial.mean_q_time_trial, color='tomato', linestyle='--', linewidth=1, label='Mean Q Time', zorder=0)
-plt.axvline(x=4, color='mediumturquoise', linestyle='--', linewidth=1, label='4 Hours', zorder=0)
-plt.axvline(x=12, color='royalblue', linestyle='--', linewidth=1, label='12 Hours', zorder=0)
-plt.axvline(x=my_trial.mean_95, color='goldenrod', linestyle='--', linewidth=1, zorder=0)
-plt.axvline(x=my_trial.mean_max, color='slategrey', linestyle='--', linewidth=1, zorder=0)
-
-# Add labels to the lines
-plt.text(my_trial.mean_q_time_trial + 2, plt.ylim()[1] * 0.95, f'Mean Q Time: {round(my_trial.mean_q_time_trial)} hrs', color='tomato', ha='left', va='top', fontsize=10, rotation=90,
-            bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-plt.text(4 + 2, plt.ylim()[1] * 0.95, f'4 Hr DTA Performance: {"{:.0%}".format(my_trial.mean_4hr)}', color='mediumturquoise', ha='left', va='top', fontsize=10, rotation=90,
-            bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-plt.text(12 + 2, plt.ylim()[1] * 0.95, f'12 Hr DTAs per day: {round(my_trial.mean_12hr)}', color='royalblue', ha='left', va='top', fontsize=10, rotation=90,
-            bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-plt.text(my_trial.mean_95 + 2, plt.ylim()[1] * 0.95, f'95th Percentile Q Time: {round(my_trial.mean_95)} hrs', color='goldenrod', ha='left', va='top', fontsize=10, rotation=90,
-            bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-plt.text(my_trial.mean_max + 2, plt.ylim()[1] * 0.95, f'Max Q Time: {round(my_trial.mean_max)} hrs', color='slategrey', ha='left', va='top', fontsize=10, rotation=90)
-
-# Add labels and title if necessary
-plt.xlabel('Admission Delays (Hours)')
-plt.ylabel('Frequency')
-plt.title('Histogram of Admission Delays')
-
-# Display the plot
-plt.show()
-
-### new plot
+### Make plot
 # Create the histogram
 plt.figure(figsize=(8, 6))
 
@@ -790,5 +715,9 @@ for ci in ci_ranges:
         alpha=0.2, 
         zorder=0
     )
+
+# Add labels and title if necessary
+plt.xlabel('Admission Delays (Hours)')
+plt.title('Histogram of Admission Delays (All Runs)')
 
 plt.show()
