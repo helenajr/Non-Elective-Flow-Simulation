@@ -692,7 +692,7 @@ for line in lines:
     # Add label with text
     plt.text(line["x"] + 2, plt.ylim()[1] * 0.95, line["label"], 
              color=line["color"], ha='left', va='top', fontsize=10, rotation=90,
-             bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
+             bbox=dict(facecolor='white', edgecolor='none', alpha=0.3, boxstyle='round,pad=0.5'))
 
 # Add transparent rectangles for confidence intervals
 ci_ranges = [
