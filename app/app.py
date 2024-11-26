@@ -14,9 +14,21 @@ with st.sidebar:
                                 min_value=100, max_value=300, value=225)
     num_nelbeds_slider = st.slider("Adjust the number of beds available",
                                 min_value=300, max_value=500, value=434)
+    daily_ed_adm_slider = st.slider("Adjust the average number of admissions via ED per day",
+                                    min_value=20, max_value=100, value=38)
+    daily_sdec_adm_slider = st.slider("Adjust the average number of admissions via SDEC per day",
+                                    min_value=0, max_value=100, value=11)
+    daily_other_adm_slider = st.slider("Adjust the average number of admissions via other routes per day",
+                                    min_value=0, max_value=50, value=4)
+    num_runs_slider = st. slider("Adjust the number of runs the model does",
+                                 min_value=10, max_value=100, value=10)
 
 g.mean_time_in_bed = (mean_los_slider * 60)
 g.number_of_nelbeds = num_nelbeds_slider
+g.ed_inter_visit = 1440/daily_ed_adm_slider
+g.sdec_inter_visit = 1440/daily_sdec_adm_slider
+g.other_inter_visit = 1440/daily_other_adm_slider
+g.number_of_runs = num_runs_slider
 
 button_run_pressed = st.button("Run simulation")
 
