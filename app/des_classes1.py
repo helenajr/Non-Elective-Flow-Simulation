@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from sim_tools.distributions import (Exponential, Lognormal, Uniform)
+import scipy.stats as stats
 
 class g: # global
     ed_inter_visit = 37.7 # see observed_edintervist notebook
@@ -298,6 +299,11 @@ class Model:
         # model.
         self.ed_admissions = (self.results_df["Department"] == "ED").sum()
         self.mean_q_time_bed = (self.results_df["Q Time Bed"].mean()) / 60.0
+        self.min_q_time_bed = (self.results_df["Q Time Bed"].min()) / 60.0
+        self.max_q_time_bed = (self.results_df["Q Time Bed"].max()) / 60.0
+        self.perf_4hr = ((self.results_df["Q Time Bed"] < 240).sum() / self.ed_admissions)
+        self.dta_12hr = round((self.results_df["Q Time Bed"] > 720).sum() / 60.0) # is this correct?
+        self.q_time_bed_95 = self.results_df["Q Time Bed"].quantile(0.95) / 60.0
         self.sdec_admissions = (self.results_df["Department"] == "SDEC").sum()
         self.mean_q_time_sdec = (self.results_df["Q Time Bed SDEC"].mean()) / 60.0
         self.other_admissions = (self.results_df["Department"] == "Other").sum()
@@ -324,13 +330,18 @@ class Model:
 
 # Class representing a Trial for our simulation - a batch of simulation runs.
 class Trial:
-    # The constructor sets up a pandas dataframe that will store the key
-    # results from each run against run number, with run number as the index.
+
+    # Empty df that will store results from each run against run number.
     def  __init__(self):
         self.df_trial_results = pd.DataFrame()
         self.df_trial_results["Run Number"] = [0]
         self.df_trial_results["ED Admissions"] = [0]
         self.df_trial_results["Mean Q Time Bed"] = [0.0]
+        self.df_trial_results["Min Q Time Bed"] = [0.0]
+        self.df_trial_results["Max Q Time Bed"] = [0.0]
+        self.df_trial_results["4hr (DTA) Performance"] = [0.0]
+        self.df_trial_results["12hr DTAs"] = [0]
+        self.df_trial_results["95th Percentile Q"] = [0.0]
         self.df_trial_results["SDEC Admissions"] = [0]
         self.df_trial_results["Mean Q Time SDEC"] = [0.0]
         self.df_trial_results["Other Admissions"] = [0]
@@ -338,20 +349,238 @@ class Trial:
         self.df_trial_results["Reneged"] = [0]
         self.df_trial_results.set_index("Run Number", inplace=True)
 
-    # Method to calculate and store overall means.
-    def calculate_means_over_trial(self):
+    def calculate_trial_summary(self): # calculate single summary stat across all runs
+        #ED Admissions
+        self.mean_admission = (
+            self.df_trial_results["ED Admissions"].mean()
+        )
+        self.std_admission = (
+            self.df_trial_results["ED Admissions"].std()
+        )
+        self.se_admission = self.std_admission / np.sqrt(g.number_of_runs)
+        self.lowerci_admission, self.upperci_admission = (
+            stats.norm.interval(0.95, loc=self.mean_admission, scale=self.se_admission)
+        )
+        self.min_admission = (
+            self.df_trial_results["ED Admissions"].min()
+        )
+        self.max_admission = (
+            self.df_trial_results["ED Admissions"].max()
+        )
+        #Mean Q Time
         self.mean_q_time_trial = (
             self.df_trial_results["Mean Q Time Bed"].mean()
         )
+        self.std_mean_q_time_trial = (
+            self.df_trial_results["Mean Q Time Bed"].std()
+        )
+        self.se_mean_q_time_trial = self.std_mean_q_time_trial / np.sqrt(g.number_of_runs)
+        self.lowerci_mean_q_time_trial, self.upperci_mean_q_time_trial = (
+            stats.norm.interval(0.95, loc=self.mean_q_time_trial, scale=self.se_mean_q_time_trial)
+        )
+        self.min_mean_q_time_trial = (
+            self.df_trial_results["Mean Q Time Bed"].min()
+        )
+        self.max_mean_q_time_trial = (
+            self.df_trial_results["Mean Q Time Bed"].max()
+        )
+        #Min Q Time
+        self.mean_min = (
+            self.df_trial_results["Min Q Time Bed"].mean()
+        )
+        self.std_min = (
+            self.df_trial_results["Min Q Time Bed"].std()
+        )
+        self.se_min = self.std_min / np.sqrt(g.number_of_runs)
+        self.lowerci_min, self.upperci_min = (
+            stats.norm.interval(0.95, loc=self.mean_min, scale=self.se_min)
+        )
+        self.min_min = (
+            self.df_trial_results["Min Q Time Bed"].min()
+        )
+        self.max_min = (
+            self.df_trial_results["Min Q Time Bed"].max()
+        )
+        #Max Q Time
+        self.mean_max = (
+            self.df_trial_results["Max Q Time Bed"].mean()
+        )
+        self.std_max = (
+            self.df_trial_results["Max Q Time Bed"].std()
+        )
+        self.se_max = self.std_max / np.sqrt(g.number_of_runs)
+        self.lowerci_max, self.upperci_max = (
+            stats.norm.interval(0.95, loc=self.mean_max, scale=self.se_max)
+        )
+        self.min_max = (
+            self.df_trial_results["Max Q Time Bed"].min()
+        )
+        self.max_max = (
+            self.df_trial_results["Max Q Time Bed"].max()
+        )
+        #4hr Performance
+        self.mean_4hr = (
+            self.df_trial_results["4hr (DTA) Performance"].mean()
+        )
+        self.std_4hr = (
+            self.df_trial_results["4hr (DTA) Performance"].std()
+        )
+        self.se_4hr = self.std_4hr / np.sqrt(g.number_of_runs)
+        self.lowerci_4hr, self.upperci_4hr = (
+            stats.norm.interval(0.95, loc=self.mean_4hr, scale=self.se_4hr)
+        )
+        self.min_4hr = (
+            self.df_trial_results["4hr (DTA) Performance"].min()
+        )
+        self.max_4hr = (
+            self.df_trial_results["4hr (DTA) Performance"].max()
+        )
+        #12hr DTAs
+        self.mean_12hr = (
+            self.df_trial_results["12hr DTAs"].mean()
+        )
+        self.std_12hr = (
+            self.df_trial_results["12hr DTAs"].std()
+        )
+        self.se_12hr = self.std_12hr / np.sqrt(g.number_of_runs)
+        self.lowerci_12hr, self.upperci_12hr = (
+            stats.norm.interval(0.95, loc=self.mean_12hr, scale=self.se_12hr)
+        )
+        self.min_12hr = (
+            self.df_trial_results["12hr DTAs"].min()
+        )
+        self.max_12hr = (
+            self.df_trial_results["12hr DTAs"].max()
+        )
+        #95th Percentile
+        self.mean_95 = (
+            self.df_trial_results["95th Percentile Q"].mean()
+        )
+        self.std_95 = (
+            self.df_trial_results["95th Percentile Q"].std()
+        )
+        self.se_95 = self.std_95 / np.sqrt(g.number_of_runs)
+        self.lowerci_95, self.upperci_95 = (
+            stats.norm.interval(0.95, loc=self.mean_95, scale=self.se_95)
+        )
+        self.min_95 = (
+            self.df_trial_results["95th Percentile Q"].min()
+        )
+        self.max_95 = (
+            self.df_trial_results["95th Percentile Q"].max()
+        )
+        #SDEC Admissions
+        self.mean_sdec = (
+            self.df_trial_results["SDEC Admissions"].mean()
+        )
+        self.std_sdec = (
+            self.df_trial_results["SDEC Admissions"].std()
+        )
+        self.se_sdec = self.std_sdec / np.sqrt(g.number_of_runs)
+        self.lowerci_sdec, self.upperci_sdec = (
+            stats.norm.interval(0.95, loc=self.mean_sdec, scale=self.se_sdec)
+        )
+        self.min_sdec = (
+            self.df_trial_results["SDEC Admissions"].min()
+        )
+        self.max_sdec = (
+            self.df_trial_results["SDEC Admissions"].max()
+        )
+        #Reneged
+        self.mean_reneged = (
+            self.df_trial_results["Reneged"].mean()
+        )
+        self.std_reneged = (
+            self.df_trial_results["Reneged"].std()
+        )
+        self.se_reneged = self.std_reneged / np.sqrt(g.number_of_runs)
+        self.lowerci_reneged, self.upperci_reneged = (
+            stats.norm.interval(0.95, loc=self.mean_reneged, scale=self.se_reneged)
+        )
+        self.min_reneged = (
+            self.df_trial_results["Reneged"].min()
+        )
+        self.max_reneged = (
+            self.df_trial_results["Reneged"].max()
+        )
 
-    # Method to print out the results from the trial.
-    # def print_trial_results(self):
-    #     print ("Trial Results")
-    #     print (self.df_trial_results)
-
-    # def print_alltrial_summary(self):
-    #     print("Mean Q Time Bed")
-    #     print(self.df_trial_results["Mean Q Time Bed"].mean())
+        #pandas dataframe to hold the results
+        self.trial_summary_df = pd.DataFrame()
+        self.trial_summary_df["Metric"] = ["ED Admissions",
+                                           "Mean Q Time (Hrs)", 
+                                           "Min Q Time",
+                                           "Max Q Time (Hrs)",
+                                           "4hr (DTA) Performance",
+                                           "12hr DTAs",
+                                           "95th Percentile Q",
+                                           "SDEC Admissions",
+                                           "Reneged"]
+        self.trial_summary_df["Mean"] = [self.mean_admission,
+                                            self.mean_q_time_trial,
+                                            self.mean_min,
+                                            self.mean_max,
+                                            self.mean_4hr,
+                                            self.mean_12hr,
+                                            self.mean_95,
+                                            self.mean_sdec,
+                                            self.mean_reneged]
+        self.trial_summary_df["St. dev"] = [self.std_admission,
+                                            self.std_mean_q_time_trial,
+                                            self.std_min,
+                                            self.std_max,
+                                            self.std_4hr,
+                                            self.std_12hr,
+                                            self.std_95,
+                                            self.std_sdec,
+                                            self.std_reneged]
+        self.trial_summary_df["St. error"] = [self.se_admission,
+                                              self.se_mean_q_time_trial,
+                                              self.se_min,
+                                              self.se_max,
+                                              self.se_4hr,
+                                              self.se_12hr,
+                                              self.se_95,
+                                              self.se_sdec,
+                                              self.se_reneged]
+        self.trial_summary_df["Lower 95% CI"] = [self.lowerci_admission,
+                                                 self.lowerci_mean_q_time_trial,
+                                                 self.lowerci_min,
+                                                 self.lowerci_max,
+                                                 self.lowerci_4hr,
+                                                 self.lowerci_12hr,
+                                                 self.lowerci_95,
+                                                 self.lowerci_sdec,
+                                                 self.lowerci_reneged]
+        self.trial_summary_df["Upper 95% CI"] = [self.upperci_admission,
+                                                 self.upperci_mean_q_time_trial,
+                                                 self.upperci_min,
+                                                 self.upperci_max,
+                                                 self.upperci_4hr,
+                                                 self.upperci_12hr,
+                                                 self.upperci_95,
+                                                 self.upperci_sdec,
+                                                 self.upperci_reneged]
+        self.trial_summary_df["Min"] = [self.min_admission,
+                                        self.min_mean_q_time_trial,
+                                        self.min_min,
+                                        self.min_max,
+                                        self.min_4hr,
+                                        self.min_12hr,
+                                        self.min_95,
+                                        self.min_sdec,
+                                        self.min_reneged]
+        self.trial_summary_df["Max"] = [self.max_admission,
+                                        self.max_mean_q_time_trial,
+                                        self.max_min,
+                                        self.max_max,
+                                        self.max_4hr,
+                                        self.max_12hr,
+                                        self.max_95,
+                                        self.max_sdec,
+                                        self.max_reneged]
+        self.trial_summary_df = self.trial_summary_df.round(2)
+        self.trial_summary_df.set_index("Metric", inplace=True)
+    
 
     # Method to run a trial
     def run_trial(self):
@@ -366,6 +595,11 @@ class Trial:
             
             self.df_trial_results.loc[run] = [my_model.ed_admissions, 
                                               my_model.mean_q_time_bed,
+                                              my_model.min_q_time_bed,
+                                              my_model.max_q_time_bed,
+                                              my_model.perf_4hr,
+                                              my_model.dta_12hr,
+                                              my_model.q_time_bed_95,
                                               my_model.sdec_admissions,
                                               my_model.mean_q_time_sdec,
                                               my_model.other_admissions,
@@ -384,9 +618,9 @@ class Trial:
         #self.print_trial_results()
         #self.print_alltrial_summary()
 
-        self.calculate_means_over_trial()
+        self.calculate_trial_summary()
 
-        return self.df_trial_results, all_results_patient_level, self.mean_q_time_trial
+        return self.df_trial_results, all_results_patient_level, self.trial_summary_df
 
 # Create an instance of the Trial class
 my_trial = Trial()
@@ -395,7 +629,7 @@ print(f"Running {g.number_of_runs} simulations......")
 start_time = time.time()
 
 # Call the run_trial method of our Trial object
-df_trial_results, all_results_patient_level, means_over_trial =  my_trial.run_trial()
+df_trial_results, all_results_patient_level, trial_summary =  my_trial.run_trial()
 
 
 # end_time = time.time()

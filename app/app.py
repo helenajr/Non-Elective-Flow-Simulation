@@ -22,88 +22,84 @@ button_run_pressed = st.button("Run simulation")
 
 if button_run_pressed:
     with st.spinner("Simulating the system"):
-        df_trial_results, all_results_patient_level, means_over_trial = Trial().run_trial()
+        df_trial_results, all_results_patient_level, trial_summary = Trial().run_trial()
 
+        ################
+        st.write("These metrics are for a 60 day period and only include those patients actually admitted")
+        value = trial_summary.loc["Mean Q Time (Hrs)", "Mean"]
+
+        st.dataframe(trial_summary)
+        ###################
+
+        #Convert wait times into hours
         all_results_patient_level['q_time_bed_hours'] = all_results_patient_level['Q Time Bed'] / 60.0
         all_results_patient_level['under4hrflag'] = np.where(all_results_patient_level['q_time_bed_hours'] < 4, 1, 0)
         all_results_patient_level['dta12hrflag'] = np.where(all_results_patient_level['q_time_bed_hours'] > 12, 1, 0)
         all_results_patient_level['q_time_bed_or_renege'] = all_results_patient_level['Q Time Bed|Renege'] / 60.0
-
-        ################
-        st.write("These metrics only include those patients actually admitted")
-
-        #calculating the metrics
-        #Mean
-        mean_pat_data = round(all_results_patient_level['q_time_bed_hours'].mean())
-
-        #Min
-        min_pat_data = round(all_results_patient_level['q_time_bed_hours'].min())
-
-        #Max
-        max_pat_data = round(all_results_patient_level['q_time_bed_hours'].max())
-
-        #95th percentile
-        q_pat_data = round(all_results_patient_level['q_time_bed_hours'].quantile(0.95))
-
-        #4hr performance
-        perf4hr_pat_data = "{:.0%}".format(all_results_patient_level['under4hrflag'].mean())
-
-        #12hr DTAs per day
-        dtasperday = round((all_results_patient_level['dta12hrflag'].sum() / g.number_of_runs) / 60.0)
-
-        #Patients reneged from ED
-        reneged = round(all_results_patient_level['reneged'].sum() / g.number_of_runs)
-
-        st.write(f"Mean Q Time for admission in ED is {mean_pat_data}")
         
-        data = {
-            "Metric": ["Mean Q Time (Hrs)", "Min Q Time", "Max Q Time (Hrs)", "4hr (DTA) Performance",
-                        "12hr DTAs per day", "95th Percentile Q Time (Hrs)", "Reneged"],
-            "Results": [mean_pat_data, min_pat_data, max_pat_data, perf4hr_pat_data, 
-                        dtasperday, q_pat_data, reneged]
-        }
-
-        st.dataframe(data)
-
-        ###################
-        # Create the histogram
+        #value = trial_summary.loc["Mean Q Time (Hrs)", "Mean"]
+        #label = f'Mean Q Time: {round(trial_summary.loc["Mean Q Time (Hrs)", "Mean"])} hrs'
+        
+        #Create the histogram
         fig = plt.figure(figsize=(8, 6))
-        sns.histplot(all_results_patient_level['q_time_bed_hours'], bins=range(int(all_results_patient_level['q_time_bed_hours'].min()), 
-                                                            int(all_results_patient_level['q_time_bed_hours'].max()) + 1, 1), 
-                    kde=False)
+        sns.histplot(
+        all_results_patient_level['q_time_bed_hours'], 
+        bins=range(int(all_results_patient_level['q_time_bed_hours'].min()), 
+                int(all_results_patient_level['q_time_bed_hours'].max()) + 1, 1), 
+        kde=False
+        )
 
-        # Set the boundary for the bins to start at 0
+        # # Set the boundary for the bins to start at 0
         plt.xlim(left=0)
 
-        # Add vertical lines
-        plt.axvline(x=mean_pat_data, color='tomato', linestyle='--', linewidth=1, label='Mean Q Time', zorder=0)
-        plt.axvline(x=4, color='mediumturquoise', linestyle='--', linewidth=1, label='4 Hours', zorder=0)
-        plt.axvline(x=12, color='royalblue', linestyle='--', linewidth=1, label='12 Hours', zorder=0)
-        plt.axvline(x=q_pat_data, color='goldenrod', linestyle='--', linewidth=1, zorder=0)
-        plt.axvline(x=max_pat_data, color='slategrey', linestyle='--', linewidth=1, zorder=0)
+        # Add vertical lines with labels
+        lines = [
+            {"x": trial_summary.loc["Mean Q Time (Hrs)", "Mean"], "color": "tomato", "label": f'Mean Q Time: {round(trial_summary.loc["Mean Q Time (Hrs)", "Mean"])} hrs'},
+            {"x": 4, "color": "mediumturquoise", "label": f'4 Hr DTA Performance: {round(trial_summary.loc["4hr (DTA) Performance", "Mean"])} hrs'},
+            {"x": 12, "color": "royalblue", "label": f'12 Hr DTAs per day: {round(trial_summary.loc["12hr DTAs", "Mean"])} hrs'},
+            {"x": trial_summary.loc["95th Percentile Q", "Mean"], "color": "goldenrod", "label": f'95th Percentile Q Time: {round(trial_summary.loc["95th Percentile Q", "Mean"])} hrs'},
+            {"x": trial_summary.loc["Max Q Time (Hrs)", "Mean"], "color": "slategrey", "label": f'Max Q Time: {round(trial_summary.loc["Max Q Time (Hrs)", "Mean"])} hrs'},
+        ]
 
-        # Add labels to the lines
-        plt.text(mean_pat_data + 2, plt.ylim()[1] * 0.95, f'Mean Q Time: {mean_pat_data} hrs', color='tomato', ha='left', va='top', fontsize=10, rotation=90,
-                    bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-        plt.text(4 + 2, plt.ylim()[1] * 0.95, f'4 Hr Performance: {perf4hr_pat_data}', color='mediumturquoise', ha='left', va='top', fontsize=10, rotation=90,
-                    bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-        plt.text(12 + 2, plt.ylim()[1] * 0.95, f'12 Hr DTAs per day: {dtasperday}', color='royalblue', ha='left', va='top', fontsize=10, rotation=90,
-                    bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-        plt.text(q_pat_data + 2, plt.ylim()[1] * 0.95, f'95th Percentile Q Time: {q_pat_data} hrs', color='goldenrod', ha='left', va='top', fontsize=10, rotation=90,
-                    bbox=dict(facecolor='white', edgecolor='none', alpha=0.7, boxstyle='round,pad=0.5'))
-        plt.text(max_pat_data + 1, plt.ylim()[1] * 0.95, f'Max Q Time: {max_pat_data} hrs', color='slategrey', ha='left', va='top', fontsize=10, rotation=90)
+        for line in lines:
+            # Add the vertical line
+            plt.axvline(x=line["x"], color=line["color"], linestyle='--', linewidth=1, zorder=0)
+            
+            # Add label with text
+            plt.text(line["x"] + 2, plt.ylim()[1] * 0.95, line["label"], 
+                    color=line["color"], ha='left', va='top', fontsize=10, rotation=90,
+                    bbox=dict(facecolor='white', edgecolor='none', alpha=0.3, boxstyle='round,pad=0.5'))
+
+        # Add transparent rectangles for confidence intervals
+        ci_ranges = [
+            {"lower": trial_summary.loc["Mean Q Time (Hrs)", "Lower 95% CI"], 
+            "upper": trial_summary.loc["Mean Q Time (Hrs)", "Upper 95% CI"], "color": "tomato"},
+            {"lower": trial_summary.loc["95th Percentile Q", "Lower 95% CI"], 
+            "upper": trial_summary.loc["95th Percentile Q", "Upper 95% CI"], "color": "goldenrod"},
+            {"lower": trial_summary.loc["Max Q Time (Hrs)", "Lower 95% CI"], 
+            "upper": trial_summary.loc["Max Q Time (Hrs)", "Upper 95% CI"], "color": "slategrey"},
+        ]
+
+        y_min, y_max = plt.ylim()
+
+        for ci in ci_ranges:
+            plt.fill_betweenx(
+                [y_min, y_max], 
+                ci["lower"], 
+                ci["upper"], 
+                color=ci["color"], 
+                alpha=0.2, 
+                zorder=0
+            )
 
         # Add labels and title if necessary
         plt.xlabel('Admission Delays (Hours)')
-        plt.ylabel('Frequency')
-        plt.title('Histogram of Admission Delays')
+        plt.title('Histogram of Admission Delays (All Runs)')
+        fig.text(0.8, 0.01, 'Boxes show 95% CI.', ha='center', fontsize=10)
 
         # Display the plot
         st.pyplot(fig)
-        ###################
-        st.dataframe(df_trial_results)
-        st.dataframe(all_results_patient_level)
+        # ###################
+        
 
-    #data0 = pd.DataFrame(data)
-
-    #st.dataframe(data0)
+    #st.dataframe(df_trial_results)
