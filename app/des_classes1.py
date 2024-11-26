@@ -580,6 +580,8 @@ class Trial:
                                         self.max_reneged]
         self.trial_summary_df = self.trial_summary_df.round(2)
         self.trial_summary_df.set_index("Metric", inplace=True)
+        self.trial_summary_df.loc["4hr (DTA) Performance"] = self.trial_summary_df.loc["4hr (DTA) Performance"] * 100
+        self.trial_summary_df = self.trial_summary_df.rename(index={"4hr (DTA) Performance":"4hr DTA Performance (%)"})
     
 
     # Method to run a trial
