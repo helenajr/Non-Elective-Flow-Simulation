@@ -91,15 +91,15 @@ if button_run_pressed:
             "upper": trial_summary.loc["Max Q Time (Hrs)", "Upper 95% CI"], "color": "slategrey"},
         ]
 
-        y_min, y_max = plt.ylim()
+        #y_min, y_max = plt.ylim()
 
         for ci in ci_ranges:
-            plt.fill_betweenx(
-                [y_min, y_max], 
-                ci["lower"], 
-                ci["upper"], 
-                color=ci["color"], 
-                alpha=0.2, 
+            
+            plt.axvspan(
+                ci["lower"],
+                ci["upper"],
+                color=ci["color"],
+                alpha=0.2,
                 zorder=0
             )
 
