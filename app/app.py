@@ -7,6 +7,22 @@ import matplotlib.pyplot as plt
 
 from des_classes1 import g, Trial
 
+#Initialise session state
+if 'button_click_count' not in st.session_state:
+  st.session_state.button_click_count = 0
+if 'session_results' not in st.session_state:
+    st.session_state['session_results'] = []
+
+# def button_action():
+#   st.session_state.button_click_count += 1
+
+# add_number_button = st.button(
+#   "Click me!",
+#   on_click=button_action
+# )
+
+#st.write(f"You've clicked the button {st.session_state.button_click_count} times")
+
 st.title("Non-Elective Flow Simulation")
 
 with st.sidebar:
@@ -32,6 +48,7 @@ g.number_of_runs = num_runs_slider
 
 tab1, tab2 = st.tabs(["Run the model", "Compare scenarios"])
 
+
 with tab1:
 
     button_run_pressed = st.button("Run simulation")
@@ -39,8 +56,10 @@ with tab1:
     if button_run_pressed:
         with st.spinner("Simulating the system"):
             df_trial_results, all_results_patient_level, trial_summary = Trial().run_trial()
+            st.session_state.button_click_count += 1
 
             ################
+            st.write(f"You've run {st.session_state.button_click_count} scenarios")
             st.write("These metrics are for a 60 day period and only include those patients actually admitted")
 
             st.dataframe(trial_summary)
@@ -118,4 +137,5 @@ with tab1:
         
 with tab2:
     st.write("work in progress, watch this space.....")
+    st.write(f"You've run {st.session_state.button_click_count} scenarios")
     #st.dataframe(df_trial_results)
