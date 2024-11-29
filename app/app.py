@@ -15,16 +15,6 @@ if 'session_results' not in st.session_state:
 if 'session_inputs' not in st.session_state:
     st.session_state['session_inputs'] = []
 
-# def button_action():
-#   st.session_state.button_click_count += 1
-
-# add_number_button = st.button(
-#   "Click me!",
-#   on_click=button_action
-# )
-
-#st.write(f"You've clicked the button {st.session_state.button_click_count} times")
-
 st.title("Non-Elective Flow Simulation")
 
 with st.sidebar:
@@ -73,19 +63,12 @@ with tab1:
             }).set_index('Input')[col_name]
             # Append input series to the session state
             st.session_state['session_inputs'].append(inputs_for_state)
-            # Convert series back to df, transpose, display
-            current_i_df = pd.DataFrame(st.session_state['session_inputs']).T
-            st.dataframe(current_i_df)
+            
             # Comparing results
             results_for_state = trial_summary['Mean']
             results_for_state.name = col_name
-            current_state = st.session_state['session_results']
-            current_state.append(results_for_state)
-            st.session_state['session_results'] = current_state
-            current_state_df = pd.DataFrame(current_state).T
-            st.dataframe(current_state_df)
+            st.session_state['session_results'].append(results_for_state)
         
-
             ################
             st.write(f"You've run {st.session_state.button_click_count} scenarios")
             st.write("These metrics are for a 60 day period and only include those patients actually admitted")
@@ -164,6 +147,12 @@ with tab1:
             # ###################
         
 with tab2:
-    st.write("work in progress, watch this space.....")
     st.write(f"You've run {st.session_state.button_click_count} scenarios")
-    #st.dataframe(df_trial_results)
+
+    # Convert series back to df, transpose, display
+    if st.session_state.button_click_count > 0:
+        current_i_df = pd.DataFrame(st.session_state['session_inputs']).T
+        st.dataframe(current_i_df)
+        
+        current_state_df = pd.DataFrame(st.session_state['session_results']).T
+        st.dataframe(current_state_df)
