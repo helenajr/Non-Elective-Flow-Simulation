@@ -12,6 +12,8 @@ if 'button_click_count' not in st.session_state:
   st.session_state.button_click_count = 0
 if 'session_results' not in st.session_state:
     st.session_state['session_results'] = []
+if 'session_inputs' not in st.session_state:
+    st.session_state['session_inputs'] = []
 
 # def button_action():
 #   st.session_state.button_click_count += 1
@@ -58,8 +60,23 @@ with tab1:
             df_trial_results, all_results_patient_level, trial_summary = Trial().run_trial()
             
             # Adding to session state objects so we can compare scenarios
+            
+            # Comparing inputs
             st.session_state.button_click_count += 1
             col_name = f"Scenario {st.session_state.button_click_count}"
+            # make dataframe with inputs, set an index, select as a series
+            inputs_for_state = pd.DataFrame({
+            'Input': ['Mean LoS', 'Number of beds', 'Admissions via ED', 
+                'Admissions via SDEC', 'Admissions via Other', 'Number of runs'],
+            col_name: [mean_los_slider, num_nelbeds_slider, daily_ed_adm_slider, 
+                daily_sdec_adm_slider, daily_other_adm_slider, num_runs_slider]
+            }).set_index('Input')[col_name]
+            # Append input series to the session state
+            st.session_state['session_inputs'].append(inputs_for_state)
+            # Convert series back to df, transpose, display
+            current_i_df = pd.DataFrame(st.session_state['session_inputs']).T
+            st.dataframe(current_i_df)
+            # Comparing results
             results_for_state = trial_summary['Mean']
             results_for_state.name = col_name
             current_state = st.session_state['session_results']
