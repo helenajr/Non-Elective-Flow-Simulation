@@ -151,8 +151,10 @@ with tab2:
 
     # Convert series back to df, transpose, display
     if st.session_state.button_click_count > 0:
+        st.write("Here are your inputs for each scenario")
         current_i_df = pd.DataFrame(st.session_state['session_inputs']).T
         st.dataframe(current_i_df)
         
+        st.write("Here are your results for each scenario")
         current_state_df = pd.DataFrame(st.session_state['session_results']).T
         st.dataframe(current_state_df)
