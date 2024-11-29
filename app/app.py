@@ -91,7 +91,7 @@ with tab1:
             all_results_patient_level['q_time_bed_hours'], 
             bins=range(int(all_results_patient_level['q_time_bed_hours'].min()), 
                     int(all_results_patient_level['q_time_bed_hours'].max()) + 1, 1), 
-            kde=False
+            kde=False)
 
             # # Set the boundary for the bins to start at 0
             plt.xlim(left=0)
@@ -131,7 +131,7 @@ with tab1:
                     ci["upper"],
                     color=ci["color"],
                     alpha=0.2,
-                    zorder=0
+                    zorder=0)
 
             # Add labels and title if necessary
             plt.xlabel('Admission Delays (Hours)')
