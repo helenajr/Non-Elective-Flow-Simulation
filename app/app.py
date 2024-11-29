@@ -56,25 +56,18 @@ with tab1:
     if button_run_pressed:
         with st.spinner("Simulating the system"):
             df_trial_results, all_results_patient_level, trial_summary = Trial().run_trial()
+            
+            # Adding to session state objects so we can compare scenarios
             st.session_state.button_click_count += 1
-            #st.session_state['session_results'].append(st.session_state.button_click_count)
-            #st.dataframe(st.session_state['session_results'])
+            col_name = f"Scenario {st.session_state.button_click_count}"
             results_for_state = trial_summary['Mean']
+            results_for_state.name = col_name
             current_state = st.session_state['session_results']
             current_state.append(results_for_state)
             st.session_state['session_results'] = current_state
-            st.dataframe(st.session_state['session_results'])
-            # compare_dict= {
-            #     'Scenario number': []
-            # }
-            #column_name = f"Scenario {st.session_state.button_click_count}"
-
-            # compare_df=pd.DataFrame
-            #compare_df[column_name] = 100
-
-            #current_state=st.session_state['session_results']
-            #current_state[st.session_state.button_click_count] = 100
-            #st.session_state['session_results'] = current_state
+            current_state_df = pd.DataFrame(current_state).T
+            st.dataframe(current_state_df)
+        
 
             ################
             st.write(f"You've run {st.session_state.button_click_count} scenarios")
