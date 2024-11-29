@@ -92,7 +92,6 @@ with tab1:
             bins=range(int(all_results_patient_level['q_time_bed_hours'].min()), 
                     int(all_results_patient_level['q_time_bed_hours'].max()) + 1, 1), 
             kde=False
-            )
 
             # # Set the boundary for the bins to start at 0
             plt.xlim(left=0)
@@ -125,17 +124,14 @@ with tab1:
                 "upper": trial_summary.loc["Max Q Time (Hrs)", "Upper 95% CI"], "color": "slategrey"},
             ]
 
-            y_min, y_max = plt.ylim()
-
             for ci in ci_ranges:
-                plt.fill_betweenx(
-                    [y_min, y_max], 
-                    ci["lower"], 
-                    ci["upper"], 
-                    color=ci["color"], 
-                    alpha=0.2, 
+
+                plt.axvspan(
+                    ci["lower"],
+                    ci["upper"],
+                    color=ci["color"],
+                    alpha=0.2,
                     zorder=0
-                )
 
             # Add labels and title if necessary
             plt.xlabel('Admission Delays (Hours)')
