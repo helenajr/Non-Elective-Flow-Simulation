@@ -1,0 +1,16 @@
+pandas==2.2.2
+numpy==1.26.4
+simpy==4.0.2
+matplotlib==3.9.1.post1
+plotly==5.23.0
+streamlit==1.37.0
+streamlit_folium==0.22.0
+folium==0.17.0
+geopandas==1.0.1
+palmerpenguins==0.1.4
+ipykernel==6.29.5
+ipython==8.27.0
+wordcloud==1.9.3
+openpyxl
+nbformat>=4.2.0
+fiona==1.9.0
