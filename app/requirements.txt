@@ -14,3 +14,6 @@ wordcloud==1.9.3
 openpyxl
 nbformat>=4.2.0
 fiona==1.9.0
+sim-tools==0.6.1
+seaborn==0.13.2
+scipy==1.14.1
