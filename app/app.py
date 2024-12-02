@@ -38,7 +38,7 @@ g.sdec_inter_visit = 1440/daily_sdec_adm_slider
 g.other_inter_visit = 1440/daily_other_adm_slider
 g.number_of_runs = num_runs_slider
 
-tab1, tab2 = st.tabs(["Run the model", "Compare scenarios"])
+tab1, tab_animate, tab2 = st.tabs(["Run the model", "Animation", "Compare scenarios"])
 
 
 with tab1:
@@ -141,6 +141,9 @@ with tab1:
             # Display the plot
             st.pyplot(fig)
             # ###################
+
+with tab_animate:
+    st.write("Animation of the latest scenario goes here")
         
 with tab2:
     st.write(f"You've run {st.session_state.button_click_count} scenarios")
