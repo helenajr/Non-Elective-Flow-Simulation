@@ -17,7 +17,7 @@ I plan to create DES model(s), using the methods taught on the HSMA, that are ab
 Contains both the model and code in one script to generate the outputs to make it easy to test the impact of changes and play around with outputs.
 
 ## app
-This folder contains the code required to run the model as an app (with model classes and outputs separated into separate scripts), run app.py to run the app. On main branch the model code for the app and in model_script should always be the same.
+This folder contains the code required to run the model as an app (with model classes and outputs separated into separate scripts), run launch.py to run the app. On main branch the model code for the app and in model_script should always be the same.
 
 ## environment
 The environment required to run the model / app.
