@@ -20,6 +20,8 @@ st.title("Non-Elective Flow Simulation")
 with st.sidebar:
     mean_los_slider = st.slider("Adjust the mean los in hours",
                                 min_value=100, max_value=300, value=225)
+    sd_los_slider = st.slider("Adjust the los standard deviation",
+                                min_value=250, max_value=500, value=405)
     num_nelbeds_slider = st.slider("Adjust the number of beds available",
                                 min_value=300, max_value=500, value=434)
     daily_ed_adm_slider = st.slider("Adjust the average number of admissions via ED per day",
@@ -32,6 +34,7 @@ with st.sidebar:
                                  min_value=10, max_value=100, value=10)
 
 g.mean_time_in_bed = (mean_los_slider * 60)
+g.sd_time_in_bed = (sd_los_slider * 60)
 g.number_of_nelbeds = num_nelbeds_slider
 g.ed_inter_visit = 1440/daily_ed_adm_slider
 g.sdec_inter_visit = 1440/daily_sdec_adm_slider
