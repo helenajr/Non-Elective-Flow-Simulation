@@ -13,9 +13,9 @@ class g: # global
     ed_inter_visit = 37.7 # see observed_edintervist notebook
     sdec_inter_visit = 128.8 # see sdec intervisit notebook
     other_inter_visit = 375.7 # see other intervisit notebook.
-    number_of_nelbeds = 213 # see number beds notebook
-    mean_time_in_bed = 6302.4 # see mean los notebook
-    sd_time_in_bed = 10956.6
+    number_of_nelbeds = 434 # see number beds notebook
+    mean_time_in_bed = 13500 # see mean los notebook
+    sd_time_in_bed = 24297
     sim_duration = 86400 #run for 60 days
     warm_up_period = 86400 # warm up for 60 days - need to test if  this is long enough
     number_of_runs = 10
