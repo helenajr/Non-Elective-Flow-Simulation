@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import time
 from sim_tools.distributions import (Exponential, Lognormal, Uniform)
 import scipy.stats as stats
+from vidigi.utils import populate_store
 
 class g: # global
     ed_inter_visit = 37.7 # see observed_edintervist notebook
