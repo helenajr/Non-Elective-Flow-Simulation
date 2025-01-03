@@ -105,13 +105,29 @@ class Model:
                 {'patient' : patient.id,
                 'pathway' : patient.department,
                 'event_type' : 'resource_use',
-                'event' : 'treatment_begins',
+                'event' : 'admission_begins',
                 'time' : self.env.now,
                 }
                 )
                 
                 sampled_bed_time = self.mean_time_in_bed_dist.sample()
                 yield self.env.timeout(sampled_bed_time)
+
+                self.event_log.append(
+                {'patient' : patient.id,
+                'pathway' : patient.department,
+                'event_type' : 'resource_use_end',
+                'event' : 'admission_complete',
+                'time' : self.env.now}
+                )
+
+                self.event_log.append(
+                {'patient' : patient.id,
+                'pathway' : patient.department,
+                'event_type' : 'arrival_departure',
+                'event' : 'depart',
+                'time' : self.env.now}
+                )
             
             # If the result of the queue was increase of priority
             elif patient.priority_update < patient.renege_time:
@@ -120,7 +136,7 @@ class Model:
                 {'patient' : patient.id,
                 'pathway' : patient.department,
                 'event_type' : 'other',
-                'event' : 'deterioration',
+                'event' : 'priority_increase',
                 'time' : self.env.now,
                 }
                 )
@@ -131,13 +147,29 @@ class Model:
                     {'patient' : patient.id,
                     'pathway' : patient.department,
                     'event_type' : 'resource_use',
-                    'event' : 'treatment_begins',
+                    'event' : 'admission_begins',
                     'time' : self.env.now,
                     }
                     )
                 
                     sampled_bed_time = self.mean_time_in_bed_dist.sample()
                     yield self.env.timeout(sampled_bed_time)
+
+                    self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'resource_use_end',
+                    'event' : 'admission_complete',
+                    'time' : self.env.now}
+                    )
+
+                    self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'arrival_departure',
+                    'event' : 'depart',
+                    'time' : self.env.now}
+                    )
             
             # If patient reneges
             else:
@@ -148,6 +180,14 @@ class Model:
                     'event' : 'renege',
                     'time' : self.env.now,
                     }
+                    )
+                
+                self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'arrival_departure',
+                    'event' : 'depart',
+                    'time' : self.env.now}
                     )
     
     def attend_sdec(self, patient):
@@ -173,13 +213,29 @@ class Model:
                 {'patient' : patient.id,
                 'pathway' : patient.department,
                 'event_type' : 'resource_use',
-                'event' : 'treatment_begins',
+                'event' : 'admission_begins',
                 'time' : self.env.now,
                 }
                 )
             
             sampled_bed_time = self.mean_time_in_bed_dist.sample()
             yield self.env.timeout(sampled_bed_time)
+
+        self.event_log.append(
+        {'patient' : patient.id,
+        'pathway' : patient.department,
+        'event_type' : 'resource_use_end',
+        'event' : 'admission_complete',
+        'time' : self.env.now}
+        )
+
+        self.event_log.append(
+        {'patient' : patient.id,
+        'pathway' : patient.department,
+        'event_type' : 'arrival_departure',
+        'event' : 'depart',
+        'time' : self.env.now}
+        )
 
     def attend_other(self, patient):
         self.event_log.append(
@@ -204,13 +260,29 @@ class Model:
                 {'patient' : patient.id,
                 'pathway' : patient.department,
                 'event_type' : 'resource_use',
-                'event' : 'treatment_begins',
+                'event' : 'admission_begins',
                 'time' : self.env.now,
                 }
                 )
             
             sampled_bed_time = self.mean_time_in_bed_dist.sample()
             yield self.env.timeout(sampled_bed_time)
+
+        self.event_log.append(
+        {'patient' : patient.id,
+        'pathway' : patient.department,
+        'event_type' : 'resource_use_end',
+        'event' : 'admission_complete',
+        'time' : self.env.now}
+        )
+
+        self.event_log.append(
+        {'patient' : patient.id,
+        'pathway' : patient.department,
+        'event_type' : 'arrival_departure',
+        'event' : 'depart',
+        'time' : self.env.now}
+        )
 
     def run(self):
         self.env.process(self.generator_ed_arrivals())
@@ -224,6 +296,7 @@ class Model:
 class Trial:
     def  __init__(self):
         self.all_event_logs = []
+        self.patient_df = pd.DataFrame()
 
     def run_trial(self):
         for run in range(g.number_of_runs):
@@ -233,10 +306,23 @@ class Trial:
             
             self.all_event_logs.append(event_log)
         self.all_event_logs = pd.concat(self.all_event_logs)
-        return self.all_event_logs
+        self.wrangle_data()
+        return self.all_event_logs, self.patient_df
+    
+    def wrangle_data(self):
+        df = self.all_event_logs[["patient", "event", "time", "run", "pathway"]]
+        df = df.pivot(index=["patient","run", "pathway"], columns="event", values="time")
+        df = (df.reset_index()
+                .rename_axis(None,axis=1))
+        df["total_los"] = df["depart"] - df["arrival"]
+        df["q_time"] = df["admission_begins"] - df["admission_wait_begins"]
+        df["treatment_time"] = df["admission_complete"] - df["admission_begins"]
+        self.patient_df = df
+    
 
 #For testing
 my_trial = Trial()
 print(f"Running {g.number_of_runs} simulations......")
-all_event_logs =  my_trial.run_trial()
-my_trial.all_event_logs.head(1000)
+all_event_logs, ecds =  my_trial.run_trial()
+display(my_trial.all_event_logs.head(1000))
+display(my_trial.patient_df.tail(1000))

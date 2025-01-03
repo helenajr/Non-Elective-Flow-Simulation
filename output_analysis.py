@@ -17,9 +17,10 @@ g.warm_up_period = (60 * 24 * 60)
 g.number_of_runs = 10
 
 # Call the run_trial method of our Trial object
-all_event_logs = Trial().run_trial()
+all_event_logs, patient_df = Trial().run_trial()
 
 display(all_event_logs.head(1000))
+display(patient_df.head(1000))
 
 ###################HISTOGRAM###########################################################
 
